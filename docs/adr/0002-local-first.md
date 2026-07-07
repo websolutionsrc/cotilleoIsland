@@ -8,8 +8,9 @@ El juego puede contener personajes basados en personas reales. Queremos validar 
 gameplay rápido y sin costes/infra ni riesgos de privacidad.
 
 ## Decisión
-V1 **local-first**: sin backend, sin cuentas, guardado local (JSON → SQLite al crecer),
-export/import manual. IA cloud desactivada por defecto o claramente explicada.
+V1 **local-first**: sin backend, sin cuentas, guardado local en **IndexedDB** (localForage)
+con esquema versionado, export/import manual (JSON). IA cloud desactivada por defecto o
+claramente explicada.
 
 ## Motivos
 - Privacidad de personajes reales (nada se sube por defecto).

@@ -31,9 +31,13 @@ Juego personal/casual, humor ligero y situaciones absurdas. Admite guiños adult
 
 ## Alcance V1 (resumen)
 Incluye: creación de residentes, isla simple + casas, necesidades, objetos/regalos,
-relaciones simples, eventos por reglas, diálogo por plantillas, niveles/desbloqueos,
-guardado local. Fuera: multijugador, red social, editor facial avanzado, IA
-conversacional libre, backend, voces, mundo abierto, 100 residentes, tienda pública.
+relaciones (amistad, tensión, **romance y matrimonio/convivencia**), eventos por reglas,
+diálogo por plantillas, niveles/desbloqueos, guardado local. Fuera: **bebés**,
+multijugador, red social, editor facial avanzado, IA conversacional libre, backend,
+voces, mundo abierto, 100 residentes, tienda pública.
+
+> El romance/matrimonio entra en V1 como fuente de "salseo"; los bebés se aplazan hasta
+> validar que el core loop engancha.
 
 ## Identidad propia (evitar IP de Nintendo)
 Nombre propio (Cotilleo Island), avatares modulares con estilo distinto (no Miis),

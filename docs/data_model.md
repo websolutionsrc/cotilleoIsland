@@ -1,7 +1,8 @@
 # Modelo de datos — Cotilleo Island
 
-Datos estructurados desde el principio. JSON local en V1 (SQLite al crecer). Ids
-estables y legibles (`resident_lina`, `guitar_01`).
+Datos estructurados desde el principio. TypeScript + JSON. Persistencia local en
+**IndexedDB** (localForage), con esquema **versionado** y migraciones. Export/import
+manual en JSON. Ids estables y legibles (`resident_lina`, `guitar_01`).
 
 ## Resident
 ```json
@@ -23,12 +24,18 @@ Necesidades V1 (0–100): `hunger`, `mood`, `energy`, `social_need`, `boredom`.
   "trust": 34,
   "tension": 12,
   "romantic_interest": 0,
+  "status": "acquaintances",
   "last_interaction": "se conocieron en la plaza"
 }
 ```
-Estados V1: `Desconocidos → Conocidos → Amigos → Mejores amigos`, con rama
-`Tensión / pelea`. Romance, convivencia, matrimonio y bebés quedan fuera de la primera
-V1 salvo que el prototipo base ya sea divertido.
+Estados V1 (`status`):
+```
+Desconocidos → Conocidos → Amigos → Mejores amigos
+                     ↓                 ↓
+               Tensión / pelea    Pareja → Convivencia / matrimonio
+```
+**En V1**: amistad, tensión, **romance y matrimonio/convivencia**.
+**Fuera de V1**: **bebés** (y descendencia). Se retoma tras validar el core loop.
 
 ## Item
 ```json
@@ -57,5 +64,9 @@ Progresión ejemplo:
 { "memory": "Leo y Gala tuvieron una discusión por ruido.", "tag": "tension_vecinal", "importance": 3 }
 ```
 
-## Fixtures iniciales sugeridos
-`Assets/Data/`: `residents_mock.json`, `items.json`, `events.json`, `dialogue_templates.json`.
+## Fixtures iniciales (`src/data/`)
+`residents_mock.json`, `items.json`, `events.json`, `dialogue_templates.json`.
+
+## Guardado
+`SaveState` versionado (`schemaVersion`). Al cargar, aplicar migraciones si la versión
+del guardado es menor. Un `save_migration_checker` en `tools/` valida compatibilidad.

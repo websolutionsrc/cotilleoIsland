@@ -7,19 +7,25 @@ AI Layer        → mejora cómo se expresa ese estado (V2, opcional, reemplazab
 ```
 El motor decide el estado; la IA embellece/resume/sugiere; la IA no manda sobre el núcleo.
 
+## Stack
+TypeScript + Vite + Phaser 3 (render 2D). Lógica de simulación **pura**, sin dependencia
+de Phaser. Persistencia local en **IndexedDB** (localForage). PWA instalable en iPad.
+
 ## Módulos
 ```
-Game App (iPad)
-├─ Island Manager      edificios · desbloqueos · progreso
-├─ Resident System     personalidad · necesidades · inventario · nivel
-├─ Relationship Graph  amistad · confianza · tensión · historial resumido
-├─ Event Engine        detecta eventos · puntúa · evita repetición · genera SceneIntent
-├─ Dialogue System     V1: plantillas · V2/MVP: generación IA controlada
-├─ AI Layer (opcional) DialogueEnhancer · DailyNarrator · MemorySummarizer
-│                      CatchphraseGenerator · EventSuggestor (validado)
-├─ Reward System       monedas · nivel · desbloqueos
-└─ Save System         estado local · logs resumidos · backups/export
+App (PWA)
+├─ Core             estado del juego · tick de simulación · tipos
+├─ Residents        personalidad · necesidades · inventario · nivel
+├─ Relationships    amistad · confianza · tensión · romance · historial resumido
+├─ Events           detecta · puntúa · evita repetición · genera SceneIntent
+├─ Dialogue         V1: plantillas · V2/MVP: generación IA controlada
+├─ AI (opcional)    DialogueEnhancer · DailyNarrator · MemorySummarizer
+│                   CatchphraseGenerator · EventSuggestor (validado)
+├─ Reward           monedas · nivel · desbloqueos
+├─ Save             IndexedDB · logs resumidos · export/import
+└─ UI (Phaser)      escenas · pantallas · render
 ```
+Regla de acoplamiento: **el core no importa Phaser**; Phaser solo en `src/ui/` y `main.ts`.
 
 ## Event Engine (por reglas)
 Cada tick de simulación (o al entrar en pantalla):
@@ -35,22 +41,22 @@ score = necesidad*peso + rareza_controlada + novedad + relevancia_relacional
 ```
 Reglas ejemplo: `hunger > 70` → "pide comida"; `social_need > 60 y pocos amigos` →
 "quiere conocer a alguien"; `friendship > 70 y tension < 20` → "quiere pasar tiempo";
-`tension > 60` → "discusión".
+`romantic_interest > 60` → "acercamiento romántico"; `tension > 60` → "discusión".
 
 ## Interfaces (IA detrás de contratos)
-```csharp
-public interface IDialogueGenerator { DialogueResult GenerateDialogue(DialogueContext context); }
-public interface IMemorySummarizer  { MemorySummary Summarize(GameEvent gameEvent); }
-public interface IEventSuggestor     { IReadOnlyList<SceneIntent> Suggest(WorldSnapshot snapshot); }
+```ts
+export interface DialogueGenerator { generate(ctx: DialogueContext): DialogueResult; }
+export interface MemorySummarizer  { summarize(event: GameEvent): MemorySummary; }
+export interface EventSuggestor     { suggest(snapshot: WorldSnapshot): SceneIntent[]; }
 ```
 - V1: `TemplateDialogueGenerator` (plantillas).
-- V2/MVP: `AIDialogueGenerator` con `IAIClient` + `IDialogueValidator` + fallback a plantilla.
-- Regla: `IEventSuggestor` **propone** → `EventEngine` **valida** → `GameState` **aplica**.
+- V2/MVP: `AiDialogueGenerator` con `AiClient` + `DialogueValidator` + fallback a plantilla.
+- Regla: `EventSuggestor` **propone** → `EventEngine` **valida** → `GameState` **aplica**.
 
 ## Persistencia
-Guardado **local**. JSON al principio; SQLite cuando el volumen lo pida. Export/import
-manual. Sin backend en V1.
+Guardado **local** en IndexedDB (localForage) con esquema versionado y migraciones.
+Export/import manual (JSON). Sin backend en V1. Ver [`data_model.md`](data_model.md).
 
-## Módulos y tests
-Sistemas puros y testeables (Resident, Relationship, EventScorer). Datos de ejemplo por
-sistema. Ver [`data_model.md`](data_model.md) y [`scene_intent_spec.md`](scene_intent_spec.md).
+## Consideración de rendimiento (PWA en iPad)
+Sprites 2D ligeros, atlas de texturas, poca lógica por frame (la simulación avanza por
+tick, no por frame). Validar almacenamiento/rendimiento en Safari iPad pronto.
