@@ -37,7 +37,7 @@ Mapa de módulos previstos. Se rellena a medida que se implementan (Fase 1: sist
 | **Save** | `src/save/` | `StoragePort` (`IndexedDbStorage` / `InMemoryStorage`) + `SaveSystem` (CRUD de residentes, `SaveState` versionado, migración, decaimiento de necesidades al cargar, escenas activas F3) | **F3.2 internal scene persistence implemented** |
 | **UI** | `src/ui/` | `IslandScene` (Phaser, placeholder de residente "en su casa") + `resident-panel` (overlay DOM: crear/editar nombre, personalidad, dar comida y mostrar reacción) | **Fase 2.5: vertical de hambre/comida implementado** |
 | **Data** | `src/data/` | Catálogo de comidas (`foods.json`) + validación/exports (`foods.ts`), quirks (`quirks.ts`); después residentes mock, eventos y plantillas | **F3.3 quirks implemented** |
-| **Visual direction** | `docs/` + future `src/assets/`/`public/` | 2D art bible: characters, outfits, environments, scene language, asset export rules and delegation guidelines so other models can produce visual work without touching the core | **pending F2.6 — Fable-only design before F3.4/F5** |
+| **Visual direction** | `docs/art_bible.md` + `docs/art/references/` + future `public/art/` | 2D art bible: characters, outfits, environments, scene language, asset export rules and delegation guidelines so other models can produce visual work without touching the core | **F2.6 art bible DONE (ADR 0006, Direction B "Storybook with volume"); pilot asset pass pending before mass batches** |
 
 ## Fase 1.2 — personalidad: sliders → tags/categoría/expresión
 - `src/core/personality-derived.ts`: proyecciones puras y deterministas de los 6 sliders
@@ -67,7 +67,14 @@ estabilizar el modelo de datos; plan de schema v4/v5/v6). Subfases previstas:
 - **[TODO] F3.4** UI: burbuja genérica de escena (sustituye la ad-hoc de hambre de F2.4), panel
   con acción de resolución, pipeline en `main.ts`. Tag `v01.00.F3` al cerrar en verde.
 
-## F2.6 — 2D Visual Direction for Fable (pending)
+## F2.6 — 2D Visual Direction for Fable (art bible DONE; pilot pending)
+
+**Status 2026-07-07**: `docs/art_bible.md` written by Fable 5 (Direction B "Storybook
+with volume", chosen by the user from 3 proposals over 4 reference images; ADR 0006).
+Libraries decision: no new runtime library yet (plain PNGs; atlas + ADR past ~50
+sprites). Next gate: pilot asset pass (bible section 13) with user approval, then mass
+batches (image model + Haiku/mini metadata + Codex integration). Reference images must
+be dropped manually into `docs/art/references/`. Original brief below.
 This subphase is **visual design only** and must be done by Fable before building F3.4
 or F5. The current product decision is to keep V1 in **2D Phaser**, not migrate to 3D,
 and raise the visual quality through a strong direction for characters, outfits,
