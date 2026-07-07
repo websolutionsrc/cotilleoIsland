@@ -5,8 +5,9 @@ Mapa de módulos previstos. Se rellena a medida que se implementan (Fase 1: sist
 ## Metodología Git por fases
 - Trabajar cada fase en una rama dedicada con patrón `develop/fN-nombre-corto`
   (ej. `develop/f2-needs-food-loop`).
-- Al cerrar una fase, hacer un commit de hito y crear un tag `V1.FN` sobre el commit
-  verificado (ej. `V1.F1` marca el cierre de Fase 1).
+- Al cerrar una fase, hacer un commit de hito y crear un tag `v01.00.FN` sobre el commit
+  verificado (ej. `v01.00.F1` marca el cierre de Fase 1). Reservar `v01.00` para el
+  cierre completo de V1; no usar tags con slash para hitos de fase.
 - Antes de empezar la siguiente fase, pasar pre-flight: `CODEMAP.md`/docs alineados,
   tests y build en verde, y dossier del vault actualizado con `[DONE]`/`[TODO]`.
 - Mantener el scope de la rama centrado en la fase; no mezclar features futuras salvo
@@ -18,7 +19,7 @@ Mapa de módulos previstos. Se rellena a medida que se implementan (Fase 1: sist
 - Trazabilidad de modelos en cada commit: ver "Trazabilidad de modelos en commits" en
   `AGENTS.md` (trailer `Co-Authored-By` = modelo orquestador actual; cuerpo del commit
   nombra el modelo constructor si fue un subagente distinto).
-- Operational language from V1.F3 onward: English + ASCII-safe text for logs, handoffs,
+- Operational language from v01.00.F3 onward: English + ASCII-safe text for logs, handoffs,
   model traces, commit bodies, validation summaries, implementation summaries and new
   technical docs.
 - New F3.1-F3.3 tests, comments and docs should be written in English. Do not mass-translate
@@ -64,7 +65,7 @@ estabilizar el modelo de datos; plan de schema v4/v5/v6). Subfases previstas:
 - **[DONE] F3.3** `src/data/quirks.ts` + `src/dialogue/scene-texts.ts` + pure
   resolution effects.
 - **[TODO] F3.4** UI: burbuja genérica de escena (sustituye la ad-hoc de hambre de F2.4), panel
-  con acción de resolución, pipeline en `main.ts`. Tag `V1.F3` al cerrar en verde.
+  con acción de resolución, pipeline en `main.ts`. Tag `v01.00.F3` al cerrar en verde.
 
 ## F2.6 — 2D Visual Direction for Fable (pending)
 This subphase is **visual design only** and must be done by Fable before building F3.4
@@ -83,6 +84,11 @@ Minimum scope for F2.6:
   weight, shadows, palette, export sizes and personality-based variants.
 - **Modular avatar system**: hair, skin, face, outfit, accessories, expression and
   reaction states. Prefer a small coherent set over an advanced face editor.
+- **Facial expressions**: define a minimum face set for emotion/state rendering:
+  `neutral`, `happy`, `hungry`, `sad`, `tired`, `bored`, `lonely`, `surprised`,
+  `quirky`. Fable should define the visual grammar; implementation should later map
+  `SceneIntent + needs + personality -> avatarExpression` as a pure projection, with
+  no persisted derived expression state.
 - **Outfits**: visual readability rules, rarity levels, accessories and how outfits relate
   to personality/category without persisting unnecessary derived state.
 - **Environments**: island, houses, interiors and future zones composed clearly for iPad,

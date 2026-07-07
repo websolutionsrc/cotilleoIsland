@@ -55,7 +55,7 @@ Las **specs técnicas viven en este repo** (`docs/`). La bóveda Obsidian
   contenido repetible, fixtures y transformaciones simples.
 
 ## Operational language and logs
-- From V1.F3 onward, new operational logs, model-trace notes, commit messages/bodies,
+- From v01.00.F3 onward, new operational logs, model-trace notes, commit messages/bodies,
   validation summaries, implementation summaries, new tests and new technical docs should
   be written in English.
 - Prefer ASCII-safe operational text: avoid accents, smart punctuation and special

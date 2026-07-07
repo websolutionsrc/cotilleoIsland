@@ -324,7 +324,7 @@ añadir campos con default vacío; el único cambio de firma anunciado es el de
 
 Regla de reparto: F3.1 y F3.3 pueden ir en paralelo (archivos disjuntos); F3.2 depende
 de F3.1; F3.4 cierra e integra. Cada subfase = commit propio con trazabilidad de modelo
-(ver AGENTS.md). Tag `V1.F3` al cerrar F3.4 con todo verde.
+(ver AGENTS.md). Tag `v01.00.F3` al cerrar F3.4 con todo verde.
 
 ## 9. Referencias
 - ADR 0005 (decisiones y alternativas descartadas de este diseño) · ADR 0004
