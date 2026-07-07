@@ -2,6 +2,16 @@
 
 Mapa de módulos previstos. Se rellena a medida que se implementan (Fase 1: sistema de residentes).
 
+## Metodología Git por fases
+- Trabajar cada fase en una rama dedicada con patrón `develop/fN-nombre-corto`
+  (ej. `develop/f2-needs-food-loop`).
+- Al cerrar una fase, hacer un commit de hito y crear un tag `V1.FN` sobre el commit
+  verificado (ej. `V1.F1` marca el cierre de Fase 1).
+- Antes de empezar la siguiente fase, pasar pre-flight: `CODEMAP.md`/docs alineados,
+  tests y build en verde, y dossier del vault actualizado con `[DONE]`/`[TODO]`.
+- Mantener el scope de la rama centrado en la fase; no mezclar features futuras salvo
+  ajustes pequeños necesarios para cerrar el hito actual.
+
 ## Módulos (arquitectura objetivo)
 | Módulo | Carpeta | Responsabilidad | Estado |
 |---|---|---|---|
