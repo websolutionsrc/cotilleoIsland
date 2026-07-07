@@ -1,6 +1,16 @@
 import type { Resident } from "@/core/resident";
 import type { ResidentId } from "@/core/ids";
 import { decayNeeds } from "@/core/needs";
+import {
+  detectSceneCandidates,
+  mulberry32,
+  resolveSceneNeeds,
+  seedForResidentDay,
+  selectScenes,
+  type SceneIntent,
+  type SceneResolutionAction,
+} from "@/events";
+import { SCENE_LOG_CAP } from "@/events/types";
 import type { StoragePort } from "./storage-port";
 import {
   createEmptySaveState,
@@ -27,7 +37,7 @@ export class SaveSystem {
   async loadState(): Promise<SaveState> {
     const raw = await this.storage.get<UnknownSaveState>(SAVE_STATE_KEY);
     if (raw === null) return createEmptySaveState();
-    return migrateSaveState(raw);
+    return migrateSaveState(raw, this.nowMs());
   }
 
   private async persistState(state: SaveState): Promise<void> {
@@ -99,6 +109,46 @@ export class SaveSystem {
       ...state,
       residents,
       activeResidentId: state.activeResidentId === id ? null : state.activeResidentId,
+      sceneLog: state.sceneLog.filter((entry) => !entry.participants.includes(id)),
+    };
+    await this.persistState(next);
+    return next;
+  }
+
+  async computeActiveScenes(nowMs = this.nowMs(), seed?: number): Promise<SceneIntent[]> {
+    const state = await this.loadState();
+    const candidates = state.residents.flatMap((resident, index) => {
+      const sceneSeed = seed === undefined ? seedForResidentDay(resident.id, nowMs) : seed + index;
+      return detectSceneCandidates(resident, nowMs, {
+        rng: mulberry32(sceneSeed),
+      });
+    });
+    return selectScenes(candidates, { sceneLog: state.sceneLog, nowMs });
+  }
+
+  async resolveScene(
+    intent: SceneIntent,
+    action: SceneResolutionAction,
+    nowMs = this.nowMs(),
+  ): Promise<SaveState> {
+    const state = await this.loadState();
+    const residentId = intent.participants[0];
+    const resident = state.residents.find((candidate) => candidate.id === residentId);
+    if (!resident) {
+      throw new Error("Cannot resolve scene for missing resident");
+    }
+
+    const updatedResident = resolveSceneNeeds(resident, intent, action);
+    const next: SaveState = {
+      ...state,
+      residents: state.residents.map((candidate) =>
+        candidate.id === updatedResident.id ? updatedResident : candidate,
+      ),
+      sceneLog: [
+        ...state.sceneLog,
+        { sceneType: intent.sceneType, participants: intent.participants, atMs: nowMs },
+      ].slice(-SCENE_LOG_CAP),
+      stats: { scenesResolved: state.stats.scenesResolved + 1 },
     };
     await this.persistState(next);
     return next;

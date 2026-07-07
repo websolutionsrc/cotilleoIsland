@@ -2,9 +2,10 @@ import type { Resident } from "@/core/resident";
 import type { ResidentId } from "@/core/ids";
 import { DEFAULT_PERSONALITY, type Personality } from "@/core/personality";
 import { normalizeNeeds, type Needs } from "@/core/needs";
+import { SCENE_LOG_CAP, type SceneLogEntry, type SceneStats, type SceneType } from "@/events/types";
 
 /** Versión actual del esquema de guardado. Incrementar al cambiar la forma de `SaveState`. */
-export const CURRENT_SCHEMA_VERSION = 3;
+export const CURRENT_SCHEMA_VERSION = 4;
 
 /** Estado de guardado completo, versionado. Ver docs/data_model.md. */
 export interface SaveState {
@@ -12,6 +13,8 @@ export interface SaveState {
   residents: Resident[];
   activeResidentId: ResidentId | null;
   needsUpdatedAtMs: number | null;
+  sceneLog: SceneLogEntry[];
+  stats: SceneStats;
 }
 
 export function createEmptySaveState(): SaveState {
@@ -20,11 +23,54 @@ export function createEmptySaveState(): SaveState {
     residents: [],
     activeResidentId: null,
     needsUpdatedAtMs: null,
+    sceneLog: [],
+    stats: { scenesResolved: 0 },
   };
 }
 
 /** Forma mínima y flexible de un guardado de esquema desconocido/antiguo. */
 export type UnknownSaveState = Record<string, unknown>;
+
+const SCENE_TYPES: readonly SceneType[] = ["hungry", "tired", "bored", "lonely", "quirk"];
+
+function isSceneType(value: unknown): value is SceneType {
+  return typeof value === "string" && SCENE_TYPES.includes(value as SceneType);
+}
+
+function normalizeSceneLogEntry(entry: unknown, nowMs: number): SceneLogEntry | null {
+  if (entry === null || typeof entry !== "object") return null;
+  const raw = entry as Record<string, unknown>;
+  if (!isSceneType(raw.sceneType) || !Array.isArray(raw.participants)) return null;
+  const participants = raw.participants.filter(
+    (participant): participant is ResidentId => typeof participant === "string",
+  );
+  if (participants.length === 0) return null;
+  const rawAtMs = typeof raw.atMs === "number" && Number.isFinite(raw.atMs) ? raw.atMs : nowMs;
+  return {
+    sceneType: raw.sceneType,
+    participants,
+    atMs: Math.min(Math.max(0, Math.round(rawAtMs)), nowMs),
+  };
+}
+
+function normalizeSceneLog(rawSceneLog: unknown, nowMs: number): SceneLogEntry[] {
+  if (!Array.isArray(rawSceneLog)) return [];
+  return rawSceneLog
+    .map((entry) => normalizeSceneLogEntry(entry, nowMs))
+    .filter((entry): entry is SceneLogEntry => entry !== null)
+    .slice(-SCENE_LOG_CAP);
+}
+
+function normalizeStats(rawStats: unknown): SceneStats {
+  if (rawStats === null || typeof rawStats !== "object") return { scenesResolved: 0 };
+  const scenesResolved = (rawStats as Record<string, unknown>).scenesResolved;
+  return {
+    scenesResolved:
+      typeof scenesResolved === "number" && Number.isFinite(scenesResolved)
+        ? Math.max(0, Math.round(scenesResolved))
+        : 0,
+  };
+}
 
 /**
  * Migra un `SaveState` guardado (de cualquier versión anterior) a la versión
@@ -32,8 +78,13 @@ export type UnknownSaveState = Record<string, unknown>;
  * ...), nunca saltando versiones. Cada paso se aplica solo si la versión del
  * estado en curso lo requiere.
  */
-export function migrateSaveState(raw: UnknownSaveState): SaveState {
+export function migrateSaveState(raw: UnknownSaveState, nowMs = Date.now()): SaveState {
   const version = typeof raw.schemaVersion === "number" ? raw.schemaVersion : 0;
+  if (version > CURRENT_SCHEMA_VERSION) {
+    throw new Error(
+      `Cannot load SaveState schema ${version}; current schema is ${CURRENT_SCHEMA_VERSION}`,
+    );
+  }
 
   let state: SaveState =
     version < 1
@@ -47,6 +98,8 @@ export function migrateSaveState(raw: UnknownSaveState): SaveState {
               ? (raw.activeResidentId as ResidentId)
               : null,
           needsUpdatedAtMs: null,
+          sceneLog: [],
+          stats: { scenesResolved: 0 },
         }
       : (raw as unknown as SaveState);
 
@@ -88,6 +141,21 @@ export function migrateSaveState(raw: UnknownSaveState): SaveState {
 
   // Punto de extensión para el siguiente paso de migración, p.ej.:
   // if (state.schemaVersion < 4) { state = { ...state, schemaVersion: 4, ... }; }
+
+  if (state.schemaVersion < 4) {
+    state = {
+      ...state,
+      schemaVersion: 4,
+      sceneLog: normalizeSceneLog((state as Partial<SaveState>).sceneLog, nowMs),
+      stats: normalizeStats((state as Partial<SaveState>).stats),
+    };
+  }
+
+  state = {
+    ...state,
+    sceneLog: normalizeSceneLog(state.sceneLog, nowMs),
+    stats: normalizeStats(state.stats),
+  };
 
   return state;
 }

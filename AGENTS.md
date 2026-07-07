@@ -54,6 +54,19 @@ Las **specs técnicas viven en este repo** (`docs/`). La bóveda Obsidian
   difíciles; razonamiento medio para core puro acotado; modelos pequeños/rápidos para
   contenido repetible, fixtures y transformaciones simples.
 
+## Operational language and logs
+- From V1.F3 onward, new operational logs, model-trace notes, commit messages/bodies,
+  validation summaries, implementation summaries, new tests and new technical docs should
+  be written in English.
+- Prefer ASCII-safe operational text: avoid accents, smart punctuation and special
+  symbols in handoffs/logs unless they are part of game-facing copy or an existing
+  domain identifier.
+- Spanish user-facing game copy can remain Spanish when intentional.
+- Do not rename existing domain identifiers such as `sceneLog`; this rule is about
+  human-written operational text, not persisted data shapes.
+- Do not mass-translate historical Spanish docs. Apply this rule to new work and to
+  nearby text only when it is already being touched for the current task.
+
 ## Trazabilidad de modelos en commits
 Cada commit debe dejar constancia de qué modelo(s) hicieron el trabajo, para poder
 auditar después qué modelo tomó cada decisión:

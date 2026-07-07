@@ -5,6 +5,16 @@ import { CURRENT_SCHEMA_VERSION, migrateSaveState } from "@/save/save-state";
 import { createResident } from "@/residents/factory";
 import { DEFAULT_PERSONALITY } from "@/core/personality";
 import { DEFAULT_NEEDS } from "@/core/needs";
+import type { SceneLogEntry } from "@/events";
+
+class CountingStorage extends InMemoryStorage {
+  setCalls = 0;
+
+  override async set<T>(key: string, value: T): Promise<void> {
+    this.setCalls += 1;
+    await super.set(key, value);
+  }
+}
 
 describe("SaveSystem con InMemoryStorage", () => {
   let storage: InMemoryStorage;
@@ -22,6 +32,8 @@ describe("SaveSystem con InMemoryStorage", () => {
       residents: [],
       activeResidentId: null,
       needsUpdatedAtMs: null,
+      sceneLog: [],
+      stats: { scenesResolved: 0 },
     });
   });
 
@@ -96,6 +108,8 @@ describe("SaveSystem con InMemoryStorage", () => {
       residents: [resident],
       activeResidentId: resident.id,
       needsUpdatedAtMs: null,
+      sceneLog: [],
+      stats: { scenesResolved: 0 },
     });
 
     const next = await saveSystem.applyNeedsDecay(5000);
@@ -135,6 +149,8 @@ describe("migrateSaveState (migraciones incrementales)", () => {
       residents: [resident],
       activeResidentId: resident.id,
       needsUpdatedAtMs: 123,
+      sceneLog: [],
+      stats: { scenesResolved: 0 },
     };
 
     expect(migrateSaveState(state)).toEqual(state);
@@ -150,6 +166,8 @@ describe("migrateSaveState (migraciones incrementales)", () => {
     expect(migrated.residents).toEqual([]);
     expect(migrated.activeResidentId).toBeNull();
     expect(migrated.needsUpdatedAtMs).toBeNull();
+    expect(migrated.sceneLog).toEqual([]);
+    expect(migrated.stats).toEqual({ scenesResolved: 0 });
   });
 
   it("conserva los residentes de un guardado v0 que sí los tenía", () => {
@@ -162,6 +180,8 @@ describe("migrateSaveState (migraciones incrementales)", () => {
     expect(migrated.residents).toEqual([resident]);
     expect(migrated.activeResidentId).toBe(resident.id);
     expect(migrated.needsUpdatedAtMs).toBeNull();
+    expect(migrated.sceneLog).toEqual([]);
+    expect(migrated.stats).toEqual({ scenesResolved: 0 });
   });
 
   it("SaveSystem migra automáticamente un guardado antiguo al cargarlo", async () => {
@@ -176,6 +196,8 @@ describe("migrateSaveState (migraciones incrementales)", () => {
     expect(state.schemaVersion).toBe(CURRENT_SCHEMA_VERSION);
     expect(state.residents).toEqual([resident]);
     expect(state.needsUpdatedAtMs).toBeNull();
+    expect(state.sceneLog).toEqual([]);
+    expect(state.stats).toEqual({ scenesResolved: 0 });
   });
 
   it("migra un guardado v1 (sin `kindness`) a v2 rellenando el valor por defecto", () => {
@@ -194,6 +216,8 @@ describe("migrateSaveState (migraciones incrementales)", () => {
     expect(migrated.residents[0]?.personality.kindness).toBe(DEFAULT_PERSONALITY.kindness);
     expect(migrated.residents[0]?.personality).toEqual(resident.personality);
     expect(migrated.residents[0]?.needs).toEqual(DEFAULT_NEEDS);
+    expect(migrated.sceneLog).toEqual([]);
+    expect(migrated.stats).toEqual({ scenesResolved: 0 });
     expect(migrated.needsUpdatedAtMs).toBeNull();
   });
 
@@ -210,5 +234,117 @@ describe("migrateSaveState (migraciones incrementales)", () => {
     expect(migrated.schemaVersion).toBe(CURRENT_SCHEMA_VERSION);
     expect(migrated.needsUpdatedAtMs).toBeNull();
     expect(migrated.residents[0]?.needs).toEqual({ ...DEFAULT_NEEDS, hunger: 100 });
+    expect(migrated.sceneLog).toEqual([]);
+    expect(migrated.stats).toEqual({ scenesResolved: 0 });
+  });
+
+  it("migrates a v3 save to the internal F3 schema with scene log and stats", () => {
+    const resident = createResident({ name: "Gala" });
+    const migrated = migrateSaveState(
+      {
+        schemaVersion: 3,
+        residents: [resident],
+        activeResidentId: resident.id,
+        needsUpdatedAtMs: 10,
+      },
+      1000,
+    );
+
+    expect(migrated.schemaVersion).toBe(CURRENT_SCHEMA_VERSION);
+    expect(migrated.sceneLog).toEqual([]);
+    expect(migrated.stats).toEqual({ scenesResolved: 0 });
+  });
+
+  it("rejects saves from a newer schema", () => {
+    expect(() =>
+      migrateSaveState({
+        schemaVersion: CURRENT_SCHEMA_VERSION + 1,
+        residents: [],
+        activeResidentId: null,
+        needsUpdatedAtMs: null,
+      }),
+    ).toThrow(/Cannot load SaveState schema/);
+  });
+
+  it("clamps future scene log timestamps while loading", () => {
+    const resident = createResident({ name: "Gala" });
+    const migrated = migrateSaveState(
+      {
+        schemaVersion: 4,
+        residents: [resident],
+        activeResidentId: resident.id,
+        needsUpdatedAtMs: 10,
+        sceneLog: [{ sceneType: "hungry", participants: [resident.id], atMs: 2000 }],
+        stats: { scenesResolved: 1 },
+      },
+      1000,
+    );
+
+    expect(migrated.sceneLog[0]?.atMs).toBe(1000);
+  });
+});
+
+describe("SaveSystem scenes", () => {
+  it("computeActiveScenes does not persist state", async () => {
+    const storage = new CountingStorage();
+    const saveSystem = new SaveSystem(storage, () => 1000);
+    const resident = createResident({ name: "Lina", needs: { hunger: 80 } });
+    await saveSystem.saveResident(resident);
+    storage.setCalls = 0;
+
+    const scenes = await saveSystem.computeActiveScenes(1000, 123);
+
+    expect(scenes.map((scene) => scene.sceneType)).toEqual(["hungry"]);
+    expect(storage.setCalls).toBe(0);
+  });
+
+  it("resolveScene persists needs, appends log and increments stats in one write", async () => {
+    const storage = new CountingStorage();
+    const saveSystem = new SaveSystem(storage, () => 1000);
+    const resident = createResident({ name: "Lina", needs: { hunger: 90 } });
+    await saveSystem.saveResident(resident);
+    const [scene] = await saveSystem.computeActiveScenes(1000, 123);
+    storage.setCalls = 0;
+
+    const next = await saveSystem.resolveScene(scene!, {
+      kind: "give_food",
+      foodEffect: { needsDelta: { hunger: -50 } },
+    });
+
+    expect(next.residents[0]?.needs.hunger).toBe(40);
+    expect(next.sceneLog).toEqual([
+      { sceneType: "hungry", participants: [resident.id], atMs: 1000 },
+    ]);
+    expect(next.stats.scenesResolved).toBe(1);
+    expect(storage.setCalls).toBe(1);
+  });
+
+  it("keeps only the latest 20 scene log entries", async () => {
+    const storage = new CountingStorage();
+    const saveSystem = new SaveSystem(storage, () => 1000);
+    const resident = createResident({ name: "Lina", needs: { hunger: 90 } });
+    const sceneLog: SceneLogEntry[] = Array.from({ length: 20 }, (_, index) => ({
+      sceneType: "bored",
+      participants: [resident.id],
+      atMs: index,
+    }));
+    await storage.set(SAVE_STATE_KEY, {
+      schemaVersion: CURRENT_SCHEMA_VERSION,
+      residents: [resident],
+      activeResidentId: resident.id,
+      needsUpdatedAtMs: 1000,
+      sceneLog,
+      stats: { scenesResolved: 20 },
+    });
+    const [scene] = await saveSystem.computeActiveScenes(1000, 123);
+
+    const next = await saveSystem.resolveScene(scene!, {
+      kind: "give_food",
+      foodEffect: { needsDelta: { hunger: -50 } },
+    });
+
+    expect(next.sceneLog).toHaveLength(20);
+    expect(next.sceneLog[0]?.atMs).toBe(1);
+    expect(next.sceneLog[19]?.sceneType).toBe("hungry");
   });
 });

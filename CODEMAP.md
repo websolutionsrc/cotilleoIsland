@@ -18,6 +18,11 @@ Mapa de módulos previstos. Se rellena a medida que se implementan (Fase 1: sist
 - Trazabilidad de modelos en cada commit: ver "Trazabilidad de modelos en commits" en
   `AGENTS.md` (trailer `Co-Authored-By` = modelo orquestador actual; cuerpo del commit
   nombra el modelo constructor si fue un subagente distinto).
+- Operational language from V1.F3 onward: English + ASCII-safe text for logs, handoffs,
+  model traces, commit bodies, validation summaries, implementation summaries and new
+  technical docs.
+- New F3.1-F3.3 tests, comments and docs should be written in English. Do not mass-translate
+  unrelated historical Spanish text; only update nearby text when it is already being touched.
 
 ## Módulos (arquitectura objetivo)
 | Módulo | Carpeta | Responsabilidad | Estado |
@@ -25,12 +30,13 @@ Mapa de módulos previstos. Se rellena a medida que se implementan (Fase 1: sist
 | **Core** | `src/core/` | Tipos base: `Resident`, `Personality`, `Needs`, `Avatar`, ids tipados (`ResidentId`); proyecciones puras de personalidad (`personality-derived.ts`); lógica pura de necesidades (`needs.ts`) | **Fase 2.1: core de necesidades implementado** (sin UI ni persistencia de F2 aún) |
 | **Residents** | `src/residents/` | `createResident`/`updateResident` (defaults + validación pura de nombre y personalidad) | **Fase 1: implementado** (sin inventario/nivel aún) |
 | **Relationships** | `src/relationships/` | `Relationship` persistida (par `a<b`, friendship/tension/romance/`status`), `chemistry` pura, detectores sociales | **pendiente F4 — diseño cerrado** (`engine_design_f3-f5.md` §3) |
-| **Events** | `src/events/` | `types/rng/detectors/cooldowns/select/resolve` — pipeline puro detect→cooldown→score→select, `SceneIntent` efímera, `sceneLog` cap 20 | **F3 en construcción — diseño cerrado** (`engine_design_f3-f5.md` §2, ADR 0005) |
-| **Dialogue** | `src/dialogue/` | V1: plantillas (`food-reactions.ts` ahora; `TemplateDialogueGenerator` después); V2: IA (`DialogueGenerator`) | **Fase 2.5: reacción de comida implementada** |
+| **Events** | `src/events/` | `types/rng/detectors/cooldowns/select/resolve` — pipeline puro detect→cooldown→score→select, `SceneIntent` efímera, `sceneLog` cap 20 | **F3.1-F3.3 implemented; F3.4 UI pending** |
+| **Dialogue** | `src/dialogue/` | V1: plantillas (`food-reactions.ts` ahora; `scene-texts.ts` en F3.3); V2: IA (`DialogueGenerator`) | **F3.3 scene text templates implemented** |
 | **AI** (opcional) | `src/ai/` | DialogueEnhancer, DailyNarrator, MemorySummarizer, CatchphraseGenerator, EventSuggestor validado | pendiente |
-| **Save** | `src/save/` | `StoragePort` (`IndexedDbStorage` / `InMemoryStorage`) + `SaveSystem` (CRUD de residentes, `SaveState` versionado, migración, decaimiento de necesidades al cargar) | **Fase 2.3: persistencia de necesidades implementada** (export/import manual pendiente) |
+| **Save** | `src/save/` | `StoragePort` (`IndexedDbStorage` / `InMemoryStorage`) + `SaveSystem` (CRUD de residentes, `SaveState` versionado, migración, decaimiento de necesidades al cargar, escenas activas F3) | **F3.2 internal scene persistence implemented** |
 | **UI** | `src/ui/` | `IslandScene` (Phaser, placeholder de residente "en su casa") + `resident-panel` (overlay DOM: crear/editar nombre, personalidad, dar comida y mostrar reacción) | **Fase 2.5: vertical de hambre/comida implementado** |
-| **Data** | `src/data/` | Catálogo de comidas (`foods.json`) + validación/exports (`foods.ts`) ahora; después residentes mock, eventos y plantillas | **Fase 2.2: comidas implementadas** |
+| **Data** | `src/data/` | Catálogo de comidas (`foods.json`) + validación/exports (`foods.ts`), quirks (`quirks.ts`); después residentes mock, eventos y plantillas | **F3.3 quirks implemented** |
+| **Visual direction** | `docs/` + future `src/assets/`/`public/` | 2D art bible: characters, outfits, environments, scene language, asset export rules and delegation guidelines so other models can produce visual work without touching the core | **pending F2.6 — Fable-only design before F3.4/F5** |
 
 ## Fase 1.2 — personalidad: sliders → tags/categoría/expresión
 - `src/core/personality-derived.ts`: proyecciones puras y deterministas de los 6 sliders
@@ -48,16 +54,58 @@ Mapa de módulos previstos. Se rellena a medida que se implementan (Fase 1: sist
 - `chemistry` (afinidad romántica por pareja) documentado como plan en `data_model.md`,
   pendiente de **Fase 4** (`src/relationships/`); no implementado en esta fase.
 
-## Fase 3 — Event Engine (diseño cerrado, construcción por subfases)
+## Fase 3 — Event Engine (F3.1-F3.3 implemented; F3.4 pending)
 Diseño completo en `docs/engine_design_f3-f5.md` (F3+F4+F5 diseñadas juntas para
 estabilizar el modelo de datos; plan de schema v4/v5/v6). Subfases previstas:
-- **F3.1** `src/events/{types,rng,detectors,cooldowns,select}.ts` — core puro, sin save/UI.
-- **F3.2** `SaveState` v4 (`sceneLog` + `stats`) + migración + guards (no-downgrade,
-  clamp de timestamps futuros) + `computeActiveScenes`/`resolveScene` en `SaveSystem`.
-- **F3.3** `src/data/quirks.ts` + `src/dialogue/scene-texts.ts` + efectos de resolución
-  (paralelizable con F3.2; archivos disjuntos de F3.1/F3.2).
-- **F3.4** UI: burbuja genérica de escena (sustituye la ad-hoc de hambre de F2.4), panel
+- **[DONE] F3.1** `src/events/{types,rng,detectors,cooldowns,select}.ts` — pure core,
+  no save/UI.
+- **[DONE] F3.2** Internal `SaveState` schema 4 (`sceneLog` + `stats`) + migration +
+  no-downgrade guard + future timestamp clamp + `computeActiveScenes`/`resolveScene`.
+- **[DONE] F3.3** `src/data/quirks.ts` + `src/dialogue/scene-texts.ts` + pure
+  resolution effects.
+- **[TODO] F3.4** UI: burbuja genérica de escena (sustituye la ad-hoc de hambre de F2.4), panel
   con acción de resolución, pipeline en `main.ts`. Tag `V1.F3` al cerrar en verde.
+
+## F2.6 — 2D Visual Direction for Fable (pending)
+This subphase is **visual design only** and must be done by Fable before building F3.4
+or F5. The current product decision is to keep V1 in **2D Phaser**, not migrate to 3D,
+and raise the visual quality through a strong direction for characters, outfits,
+environments and scene composition.
+
+Fable owns the hard design work: define an actionable art bible, decide asset libraries
+or formats if needed, and write precise instructions so other models can produce sprites,
+placeholders, image prompts, simple animations or integration tasks. Fable must not
+implement gameplay or touch `SaveSystem`, EventEngine, IndexedDB or pure simulation logic.
+
+Minimum scope for F2.6:
+- **Characters**: 2D chibi/cozy style, large heads, expressive eyes, readable silhouettes
+  at small sizes, original identity, no derivative IP look. Define proportions, line
+  weight, shadows, palette, export sizes and personality-based variants.
+- **Modular avatar system**: hair, skin, face, outfit, accessories, expression and
+  reaction states. Prefer a small coherent set over an advanced face editor.
+- **Outfits**: visual readability rules, rarity levels, accessories and how outfits relate
+  to personality/category without persisting unnecessary derived state.
+- **Environments**: island, houses, interiors and future zones composed clearly for iPad,
+  PWA and Phaser 2D. Avoid heavy assets or backgrounds that make residents hard to read.
+- **Scenes**: visual language for `SceneIntent`: bubbles, poses, expressions, icons,
+  reactions and micro-scene composition; prepare the replacement of the ad-hoc F2 hunger
+  bubble with the generic F3.4 scene UI.
+- **Libraries/production pipeline**: propose spritesheets, texture atlases,
+  Aseprite/TexturePacker, image generation or a manual pipeline. Any new dependency needs
+  an ADR before entering the repo.
+- **Delegation**: separate what Fable designs, what can be delegated to image/asset models,
+  and what Sonnet/Codex should later integrate technically.
+
+F2.6 acceptance criteria:
+- Visual design document in `docs/` and summary in the vault.
+- Explicit decision on libraries/formats, or confirmation that no new library is needed yet.
+- Minimum V1 asset list: idle, basic walk, positive reaction, negative reaction,
+  hunger/need state, panel portrait, island avatar and emotion/icons.
+- Clear impact on F3.4 and F5: what changes in UI, scene presentation and island/progress.
+- Clear limits: no 3D, no babies, no advanced face editor, no open world, no public shop
+  and no free-form conversational AI.
+- Recommended model: **Fable**, reasoning **high**, no subagents except for isolated visual
+  variants after the art bible is closed.
 
 ## Fase 2.1 — necesidades: core puro
 - `src/core/needs.ts`: mantiene `Needs` y `DEFAULT_NEEDS` y añade helpers puros para
@@ -108,7 +156,7 @@ estabilizar el modelo de datos; plan de schema v4/v5/v6). Subfases previstas:
 - `src/save/storage-port.ts`: puerto `StoragePort` (`get/set/remove/keys`), implementado por
   `IndexedDbStorage` (runtime, localForage) e `InMemoryStorage` (tests). `SaveSystem` recibe el
   puerto por inyección y expone `saveResident/loadResident/listResidents/removeResident/loadState`.
-  `save-state.ts` define `SaveState` (`schemaVersion`, actualmente **3**) y `migrateSaveState`,
+  `save-state.ts` define `SaveState` (`schemaVersion`, actualmente **4**) y `migrateSaveState`,
   con pasos incrementales v0→v1, v1→v2 (rellena `kindness`) y v2→v3 (normaliza
   necesidades y añade `needsUpdatedAtMs`).
 - `src/ui/{island-scene,resident-panel,avatar-palette}.ts` + `src/main.ts`: única capa que importa
