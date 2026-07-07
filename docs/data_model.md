@@ -17,6 +17,38 @@ Necesidades V1 (0–100): `hunger`, `mood`, `energy`, `social_need`, `boredom`.
 `kindness` (amabilidad/calidez) se añadió en Fase 1.1: eje que en fases futuras (diálogo,
 Event Engine) disparará escenas de conflicto/ayuda. Por ahora es solo dato, sin lógica asociada.
 
+### Personalidad: 6 sliders, única fuente de verdad
+
+`Personality` tiene 6 rasgos enteros 0–100: `energy`, `sociability`, `patience`,
+`weirdness`, `romanticism`, `kindness`. Son la **única fuente de verdad** sobre la
+personalidad de un residente. Todo lo demás —tags de texto, categoría amplia,
+hint de expresión/pose— es una **proyección pura y determinista** de esos 6
+sliders, calculada en el momento en que hace falta (render, plantillas de
+escena, etc.). Estas proyecciones **no se persisten** en `SaveState` y **no se
+editan** por separado del slider que las genera: nunca hay que migrar un
+guardado antiguo porque cambie el bucketing, solo cuando cambian los propios
+sliders (como pasó en v1→v2 con `kindness`).
+
+Implementado en `src/core/personality-derived.ts` (TS puro, sin Phaser):
+- `personalityToTags(p): string[]` — hasta 3 etiquetas (p.ej. `"enérgica"`,
+  `"impaciente"`) para los rasgos en banda extrema (alto ≥ 70, bajo ≤ 30),
+  ordenadas por distancia a 50 (desempate: orden fijo de `PERSONALITY_KEYS`).
+  Si ningún rasgo es extremo, devuelve `["equilibrada"]`. `romanticism` bajo no
+  genera tag propia (no hay opuesto natural a "romántica").
+- `personalityCategory(p): PersonalityCategory` — una de 4 familias amplias
+  (`"Sociable"`, `"Reservada"`, `"Cariñosa"`, `"Excéntrica"`), por score 0–200
+  a partir de los sliders relevantes; en empate exacto gana la familia que
+  aparece antes en esa lista fija. Solo para identidad visual rápida (acento de
+  color en la UI), nunca dato editable.
+- `personalityExpression(p): string` — hint mínimo de pose/idle
+  (`"animada"`, `"sonriente"`, `"seria"`, `"peculiar"`, `"neutral"`) por
+  prioridad fija sobre el rasgo dominante.
+
+`docs/scene_intent_spec.md` usa un campo libre `tone` en sus ejemplos de
+`SceneIntent`; cuando la Fase 3 (diálogo) lo conecte a datos reales, debe
+alimentarse de `personalityToTags`/`personalityCategory`, no de tags escritas a
+mano por residente.
+
 ## Relationship
 ```json
 {
@@ -38,6 +70,25 @@ Desconocidos → Conocidos → Amigos → Mejores amigos
 ```
 **En V1**: amistad, tensión, **romance y matrimonio/convivencia**.
 **Fuera de V1**: **bebés** (y descendencia). Se retoma tras validar el core loop.
+
+### Romance individual vs. `chemistry` de pareja (plan Fase 4)
+
+`Personality.romanticism` es una propensión **individual**: cuánto se enamora
+en general un residente, sin conocer a nadie en concreto. Es y sigue siendo un
+slider normal de `Personality` (persistido, editable con el resto de rasgos).
+
+La **afinidad entre dos residentes concretos** (a quién le gusta quién, y
+cuánto) es un concepto distinto que se implementará en **Fase 4** como un valor
+`chemistry` calculado a partir de: `romanticism` de ambos residentes +
+compatibilidad de sus personalidades (p.ej. categorías/tags complementarias) +
+el estado actual de la relación (`friendship`, `tension`, `status`, etc.).
+`chemistry` **no será un campo editable** ni un dato independiente guardado
+aparte de sus insumos: será, igual que las tags de personalidad, una función
+pura `chemistry(a: Personality, b: Personality, relationship: Relationship):
+number` (nombre/forma exactos a definir en Fase 4), recalculable en cualquier
+momento a partir del `SaveState` existente. Hasta Fase 4, `romantic_interest`
+en `Relationship` sigue siendo el único dato de afinidad, sin cálculo
+automático.
 
 ## Item
 ```json
@@ -75,18 +126,11 @@ del guardado es menor. Un `save_migration_checker` en `tools/` valida compatibil
 Versión actual: **2** (v1 → v2: se añadió `kindness` a `Personality`; los guardados v1
 se rellenan con el valor por defecto al migrar).
 
-## Principio: las tags de escena se derivan de los sliders (no se escriben a mano)
+## Principio: las tags/categoría de personalidad se derivan de los sliders (no se escriben a mano)
 
-`docs/scene_intent_spec.md` usa un campo libre `tone` (p.ej. `"dramatic"`, `"shy"`) en sus
-ejemplos de `SceneIntent`. Eso es hoy una duplicidad en potencia respecto a los sliders
-numéricos de `Personality`: si alguien empieza a asignar tags de personalidad sueltas por
-residente (a mano, por escena), la personalidad tendría dos fuentes de verdad divergentes
-(los sliders y las tags de texto).
-
-Regla para Fase 3 (diálogo): las tags/tono de personalidad usados por escenas y plantillas
-**deben derivarse siempre** de los sliders mediante una única función determinista,
-`personalityToTags(personality: Personality): string[]` (o similar), nunca escribirse o
-editarse sueltas por residente. Los sliders (`Personality`) son la única fuente de verdad;
-`personalityToTags` es una proyección pura y determinista de esos sliders, no un dato
-independiente. Esta tarea **no** implementa esa función — solo documenta el contrato para
-cuando se aborde Fase 3.
+Ver la sección "Personalidad: 6 sliders, única fuente de verdad" más arriba y
+`docs/adr/0004-personality-model.md`. `personalityToTags`/`personalityCategory`/
+`personalityExpression` (`src/core/personality-derived.ts`) ya están
+implementadas desde Fase 1.2 y son la única forma permitida de obtener
+tags/categoría/expresión de un residente; nunca se escriben o editan sueltas
+por residente ni se persisten en `SaveState`.

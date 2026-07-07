@@ -57,10 +57,26 @@ export interface EventSuggestor     { suggest(snapshot: WorldSnapshot): SceneInt
 Guardado **local** en IndexedDB (localForage) con esquema versionado y migraciones.
 Export/import manual (JSON). Sin backend en V1. Ver [`data_model.md`](data_model.md).
 
-## Tags de personalidad de escena (Fase 3, principio)
-Las tags/tono de una escena (p.ej. "dramática", "impaciente") deben derivarse siempre de
-los sliders de `Personality` mediante una única función determinista (`personalityToTags`,
-Fase 3); no se autoescriben tags de texto sueltas por residente. Ver `data_model.md`.
+## Subsistema de personalidad: sliders → tags/categoría/expresión (Fase 1.2)
+Los 6 sliders de `Personality` (`energy`, `sociability`, `patience`, `weirdness`,
+`romanticism`, `kindness`) son la única fuente de verdad. `src/core/personality-derived.ts`
+(TS puro, sin Phaser, sin dependencias de storage) expone tres proyecciones **puras y
+deterministas** de esos sliders, recalculadas siempre al vuelo, nunca persistidas ni
+editables por separado:
+```
+Personality (sliders, persistidos)
+        │
+        ├─ personalityToTags(p)        → hasta 3 tags de texto (p.ej. "enérgica", "impaciente")
+        ├─ personalityCategory(p)      → 1 de 4 familias amplias ("Sociable"/"Reservada"/"Cariñosa"/"Excéntrica")
+        └─ personalityExpression(p)    → hint de pose/idle ("animada", "sonriente", "seria", "peculiar", "neutral")
+```
+Consumido hoy por `src/ui/island-scene.ts` (muestra categoría/tags y tiñe el placeholder
+según la expresión); en Fase 3 lo consumirán también las plantillas de diálogo/`SceneIntent`
+en vez del campo libre `tone`. Ver `docs/data_model.md` y `docs/adr/0004-personality-model.md`.
+
+La afinidad romántica **entre dos residentes** (`chemistry`) es un cálculo distinto,
+pendiente de Fase 4 (Relationships): no vive en `Personality` ni en este módulo. Ver
+"Romance individual vs. `chemistry` de pareja" en `data_model.md`.
 
 ## Consideración de rendimiento (PWA en iPad)
 Sprites 2D ligeros, atlas de texturas, poca lógica por frame (la simulación avanza por

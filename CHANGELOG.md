@@ -2,6 +2,42 @@
 
 Formato: entradas por fase/hito. Fechas en `YYYY-MM-DD`.
 
+## [Fase 1.2] — 2026-07-07
+
+### Añadido
+- **Core** (`src/core/personality-derived.ts`, nuevo, TS puro sin Phaser): implementa las
+  proyecciones puras y deterministas de los 6 sliders de `Personality` que Fase 1.1 dejó
+  documentadas como contrato pendiente:
+  - `personalityToTags(p)`: hasta 3 tags por umbrales fijos (alto ≥ 70, bajo ≤ 30),
+    ordenadas por distancia a 50 (desempate: orden fijo de `PERSONALITY_KEYS`); si ningún
+    rasgo es extremo devuelve `["equilibrada"]`. `romanticism` bajo no genera tag propia.
+  - `personalityCategory(p)`: clasifica en 1 de 4 familias amplias (`Sociable`,
+    `Reservada`, `Cariñosa`, `Excéntrica`) por score comparable 0–200 por familia; empate
+    exacto lo resuelve el orden fijo de esa lista (gana `Sociable`).
+  - `personalityExpression(p)`: hint de pose/idle (`"animada"`, `"sonriente"`, `"seria"`,
+    `"peculiar"`, `"neutral"`) por prioridad fija sobre el rasgo dominante.
+  - Reexportado desde el barrel `src/core/index.ts`.
+- **UI** (`src/ui/island-scene.ts`): muestra la categoría y las tags derivadas junto al
+  resumen de personalidad, y usa `personalityExpression`/`personalityCategory` para variar
+  el color del nombre y del trazo de la "casa" placeholder (recalculado en cada
+  `renderResident`, sigue siendo placeholder sin sprites). El panel de edición
+  (`resident-panel.ts`) no cambia: sigue editando solo los 6 sliders + nombre.
+- Tests (Vitest, `tests/personality-derived.test.ts`): casos extremos, equilibrados y de
+  desempate para las tres funciones.
+- `docs/adr/0004-personality-model.md` (nuevo ADR): fija el modelo — sliders como única
+  fuente de verdad, tags/categoría/expresión como proyecciones puras no persistidas, y el
+  romance dividido en `romanticism` (individual) + `chemistry` de pareja (plan Fase 4).
+- `docs/data_model.md`: nueva sección "Personalidad: 6 sliders, única fuente de verdad" y
+  sección "Romance individual vs. `chemistry` de pareja (plan Fase 4)" en `Relationship`.
+- `docs/architecture.md`: subsistema de personalidad (sliders → tags/categoría/expresión).
+
+### Decisiones
+- **Ningún cambio de esquema de guardado**: `CURRENT_SCHEMA_VERSION` sigue en **2**, sin
+  migración nueva. Tags/categoría/expresión nunca se guardan en `SaveState`; se recalculan
+  siempre desde los sliders persistidos.
+- `chemistry` (afinidad romántica por pareja) **no se implementa** en esta fase: queda como
+  plan documentado para Fase 4 (`src/relationships/`, hoy inexistente).
+
 ## [Fase 1.1] — 2026-07-07
 
 ### Añadido
