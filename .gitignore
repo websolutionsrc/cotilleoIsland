@@ -1,0 +1,46 @@
+# === Unity ===
+UnityProject/[Ll]ibrary/
+UnityProject/[Tt]emp/
+UnityProject/[Oo]bj/
+UnityProject/[Bb]uild/
+UnityProject/[Bb]uilds/
+UnityProject/[Ll]ogs/
+UnityProject/[Uu]ser[Ss]ettings/
+UnityProject/[Mm]emoryCaptures/
+UnityProject/[Rr]ecordings/
+UnityProject/.vs/
+UnityProject/Assets/AssetStoreTools*
+
+# Unity generated project files
+*.csproj
+*.unityproj
+*.sln
+*.suo
+*.tmp
+*.user
+*.userprefs
+*.pidb
+*.booproj
+*.svd
+*.pdb
+*.mdb
+*.opendb
+*.VC.db
+
+# Crash reports
+sysinfo.txt
+
+# Builds
+*.apk
+*.aab
+*.ipa
+*.app
+
+# === OS / editores ===
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# === Nodo/tools (por si acaso) ===
+node_modules/
