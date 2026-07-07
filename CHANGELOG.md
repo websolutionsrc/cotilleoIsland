@@ -2,6 +2,27 @@
 
 Formato: entradas por fase/hito. Fechas en `YYYY-MM-DD`.
 
+## [Fase 3 — diseño] — 2026-07-07
+
+### Añadido (solo documentación; sin código)
+- `docs/engine_design_f3-f5.md`: arquitectura conjunta del motor (F3 Event Engine,
+  F4 Relationships, F5 Isla/progreso) con modelo de datos unificado (plan de schema
+  v4/v5/v6), invariantes, plan de evolución honesto, subfases F3.1–F3.4 y anti-scope.
+- `docs/adr/0005-event-engine-f3-f5.md`: decisiones (participants[] desde F3, cooldown
+  duro, SceneIntent efímera, status persistido vs chemistry pura, stats en v4) y
+  alternativas descartadas.
+- `docs/scene_intent_spec.md` reescrita como contrato V1 real (la anterior era
+  aspiracional y contradecía el ADR 0004: fuera `tone`/`result_options`).
+- `docs/architecture.md`/`docs/data_model.md`/`CODEMAP.md` alineados (tabla de versiones
+  de guardado v2→v6; corregida la inconsistencia "versión actual: 2").
+- `AGENTS.md`: regla de trazabilidad de modelos en commits (trailer = orquestador
+  actual; el cuerpo nombra al constructor si fue un subagente distinto).
+
+### Decisiones
+- Diseño por Fable 5 (sesión interactiva); construcción prevista: Sonnet/Codex.
+- Regla que ordena el modelo de datos: derivado si no tiene memoria; persistido si una
+  transición depende de la historia.
+
 ## [Fase 1.2] — 2026-07-07
 
 ### Añadido

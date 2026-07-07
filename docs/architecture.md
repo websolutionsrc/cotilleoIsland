@@ -27,21 +27,22 @@ App (PWA)
 ```
 Regla de acoplamiento: **el core no importa Phaser**; Phaser solo en `src/ui/` y `main.ts`.
 
-## Event Engine (por reglas)
-Cada tick de simulación (o al entrar en pantalla):
+## Event Engine (por reglas) — diseño cerrado en `engine_design_f3-f5.md`
+Sin ticks ni timers: todo se recalcula **al abrir la isla o tras una acción** (patrón
+`applyNeedsDecay`). Pipeline (funciones puras, reloj y RNG inyectados):
 ```
-revisar residentes → detectar necesidades y relaciones relevantes
-→ crear eventos candidatos → puntuar → filtrar repetidos
-→ elegir 1-3 eventos activos → generar SceneIntent
+decay (F2) → detectores (needs+personality) → filtro duro de cooldown (sceneLog)
+→ score = urgency × pesoTipo → 1 escena/residente (máx 3) → SceneIntent (efímera)
+→ plantilla → el jugador resuelve → efectos + log + stats en UNA escritura
 ```
-Scoring simple:
-```
-score = necesidad*peso + rareza_controlada + novedad + relevancia_relacional
-      - penalización_por_repetición
-```
-Reglas ejemplo: `hunger > 70` → "pide comida"; `social_need > 60 y pocos amigos` →
-"quiere conocer a alguien"; `friendship > 70 y tension < 20` → "quiere pasar tiempo";
-`romantic_interest > 60` → "acercamiento romántico"; `tension > 60` → "discusión".
+- F3: 5 `sceneType` (`hungry/tired/bored/lonely/quirk`); excepción única de cooldown:
+  hambre urgente (≥ 90). F4 añade detectores sociales; F5 añade `zone_opening` y
+  recompensas. El motor no se reescribe: solo crece la lista de detectores.
+- La escena activa **no se persiste** (se recalcula); solo se persiste `sceneLog`
+  (cap 20) + `stats`. Contrato completo: `scene_intent_spec.md`; decisiones: ADR 0005.
+- Regla derivado-vs-persistido que ordena todo el motor: **derivado si no tiene memoria;
+  persistido si una transición depende de la historia** (generaliza el ADR 0004; por eso
+  `chemistry` es pura y `Relationship.status` se persiste).
 
 ## Interfaces (IA detrás de contratos)
 ```ts

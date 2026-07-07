@@ -54,6 +54,18 @@ Las **specs técnicas viven en este repo** (`docs/`). La bóveda Obsidian
   difíciles; razonamiento medio para core puro acotado; modelos pequeños/rápidos para
   contenido repetible, fixtures y transformaciones simples.
 
+## Trazabilidad de modelos en commits
+Cada commit debe dejar constancia de qué modelo(s) hicieron el trabajo, para poder
+auditar después qué modelo tomó cada decisión:
+- El trailer `Co-Authored-By: Claude <Modelo> <noreply@anthropic.com>` identifica al
+  modelo que **orquestó/revisó y ejecutó el commit** (el modelo del chat interactivo en
+  ese momento — puede cambiar a lo largo del proyecto; no usar un valor fijo).
+- Si el código lo construyó un **subagente de otro modelo** (p.ej. Sonnet construyendo
+  mientras el chat lo dirige Fable/Opus), el cuerpo del commit debe decirlo explícito:
+  "Construido por subagente <Modelo>, revisado e integrado por <Modelo orquestador>".
+- Si una tarea de **diseño** (arquitectura, ADR) la hizo un modelo distinto al que
+  luego construyó el código, nombrar ambos en el cuerpo del commit o del ADR.
+
 ## Cómo pedir tareas
 - Buenas: "Implementa `ResidentState` + un test unitario. No toques UI ni SaveSystem."
 - Malas: "Hazme el juego entero", "Mete IA a los personajes", "Refactoriza todo".

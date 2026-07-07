@@ -126,10 +126,22 @@ Progresión ejemplo:
 `residents_mock.json`, `items.json`, `events.json`, `dialogue_templates.json`.
 
 ## Guardado
-`SaveState` versionado (`schemaVersion`). Al cargar, aplicar migraciones si la versión
-del guardado es menor. Un `save_migration_checker` en `tools/` valida compatibilidad.
-Versión actual: **2** (v1 → v2: se añadió `kindness` a `Personality`; los guardados v1
-se rellenan con el valor por defecto al migrar).
+`SaveState` versionado (`schemaVersion`). Al cargar, aplicar migraciones incrementales si
+la versión del guardado es menor; si es **mayor** que la actual, no degradar (guard de
+F3.2). Un `save_migration_checker` en `tools/` valida compatibilidad.
+
+Historial y plan de versiones (diseño completo en `engine_design_f3-f5.md` §1):
+| v | Fase | Añade |
+|---|---|---|
+| 2 | F1.1 | `kindness` en `Personality` (backfill con default) |
+| 3 | F2.3 | needs normalizadas + `needsUpdatedAtMs` |
+| **4** | **F3** | `sceneLog` (cap 20, entradas `{sceneType, participants[], atMs}`) + `stats.scenesResolved` |
+| 5 | F4 | `relationships: Relationship[]` (par normalizado `a<b`; `status` persistido; sin `trust`) |
+| 6 | F5 | `wallet.coins` + `unlockedZoneIds` + `pantry` (semilla: 50 coins + despensa inicial) |
+
+Regla que decide qué se persiste: **derivado si no tiene memoria; persistido si una
+transición depende de la historia**. Por eso `chemistry`/tags/escenas activas nunca se
+guardan, y `sceneLog`/`stats`/`status`/`wallet` sí.
 
 ## Principio: las tags/categoría de personalidad se derivan de los sliders (no se escriben a mano)
 

@@ -15,14 +15,17 @@ Mapa de módulos previstos. Se rellena a medida que se implementan (Fase 1: sist
   (`40-Proyectos/CotilleoIsland/CotilleoIsland.md`): qué quedó `[DONE]`, qué sigue
   `[TODO]`, tests/build y siguiente modelo recomendado. No basta con actualizar solo
   `CODEMAP.md` o docs técnicas del repo.
+- Trazabilidad de modelos en cada commit: ver "Trazabilidad de modelos en commits" en
+  `AGENTS.md` (trailer `Co-Authored-By` = modelo orquestador actual; cuerpo del commit
+  nombra el modelo constructor si fue un subagente distinto).
 
 ## Módulos (arquitectura objetivo)
 | Módulo | Carpeta | Responsabilidad | Estado |
 |---|---|---|---|
 | **Core** | `src/core/` | Tipos base: `Resident`, `Personality`, `Needs`, `Avatar`, ids tipados (`ResidentId`); proyecciones puras de personalidad (`personality-derived.ts`); lógica pura de necesidades (`needs.ts`) | **Fase 2.1: core de necesidades implementado** (sin UI ni persistencia de F2 aún) |
 | **Residents** | `src/residents/` | `createResident`/`updateResident` (defaults + validación pura de nombre y personalidad) | **Fase 1: implementado** (sin inventario/nivel aún) |
-| **Relationships** | `src/relationships/` | Amistad, confianza, tensión, romance, historial resumido, `chemistry` de pareja (F4) | **pendiente F4** |
-| **Events** | `src/events/` | Detecta eventos, puntúa, evita repetición, genera `SceneIntent` | pendiente |
+| **Relationships** | `src/relationships/` | `Relationship` persistida (par `a<b`, friendship/tension/romance/`status`), `chemistry` pura, detectores sociales | **pendiente F4 — diseño cerrado** (`engine_design_f3-f5.md` §3) |
+| **Events** | `src/events/` | `types/rng/detectors/cooldowns/select/resolve` — pipeline puro detect→cooldown→score→select, `SceneIntent` efímera, `sceneLog` cap 20 | **F3 en construcción — diseño cerrado** (`engine_design_f3-f5.md` §2, ADR 0005) |
 | **Dialogue** | `src/dialogue/` | V1: plantillas (`food-reactions.ts` ahora; `TemplateDialogueGenerator` después); V2: IA (`DialogueGenerator`) | **Fase 2.5: reacción de comida implementada** |
 | **AI** (opcional) | `src/ai/` | DialogueEnhancer, DailyNarrator, MemorySummarizer, CatchphraseGenerator, EventSuggestor validado | pendiente |
 | **Save** | `src/save/` | `StoragePort` (`IndexedDbStorage` / `InMemoryStorage`) + `SaveSystem` (CRUD de residentes, `SaveState` versionado, migración, decaimiento de necesidades al cargar) | **Fase 2.3: persistencia de necesidades implementada** (export/import manual pendiente) |
@@ -44,6 +47,17 @@ Mapa de módulos previstos. Se rellena a medida que se implementan (Fase 1: sist
   no cambió el esquema de guardado; el schema actual sube a v3 en F2.3 por necesidades.
 - `chemistry` (afinidad romántica por pareja) documentado como plan en `data_model.md`,
   pendiente de **Fase 4** (`src/relationships/`); no implementado en esta fase.
+
+## Fase 3 — Event Engine (diseño cerrado, construcción por subfases)
+Diseño completo en `docs/engine_design_f3-f5.md` (F3+F4+F5 diseñadas juntas para
+estabilizar el modelo de datos; plan de schema v4/v5/v6). Subfases previstas:
+- **F3.1** `src/events/{types,rng,detectors,cooldowns,select}.ts` — core puro, sin save/UI.
+- **F3.2** `SaveState` v4 (`sceneLog` + `stats`) + migración + guards (no-downgrade,
+  clamp de timestamps futuros) + `computeActiveScenes`/`resolveScene` en `SaveSystem`.
+- **F3.3** `src/data/quirks.ts` + `src/dialogue/scene-texts.ts` + efectos de resolución
+  (paralelizable con F3.2; archivos disjuntos de F3.1/F3.2).
+- **F3.4** UI: burbuja genérica de escena (sustituye la ad-hoc de hambre de F2.4), panel
+  con acción de resolución, pipeline en `main.ts`. Tag `V1.F3` al cerrar en verde.
 
 ## Fase 2.1 — necesidades: core puro
 - `src/core/needs.ts`: mantiene `Needs` y `DEFAULT_NEEDS` y añade helpers puros para
