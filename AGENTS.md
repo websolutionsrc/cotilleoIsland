@@ -41,6 +41,19 @@ volumen de contenido. No montar comités ni pipelines de varios modelos todavía
 Las **specs técnicas viven en este repo** (`docs/`). La bóveda Obsidian
 (`40-Proyectos/CotilleoIsland/`) guarda objetivo, estado y roadmap, y apunta aquí.
 
+## Planificación y uso de modelos
+- Antes de generar o ejecutar el plan de una fase/subfase, separar siempre:
+  **diseño/rediseño**, **código** y **validación**.
+- Antes de lanzar la tarea, recomendar modelo y grado de razonamiento (`low`,
+  `medium`, `high` o equivalente en la herramienta usada), con una justificación breve.
+- Decidir explícitamente si usar subagentes/paralelismo. Por defecto, no usarlos en
+  tareas pequeñas, muy acopladas o con archivos compartidos.
+- Cada subfase debe tener criterio de aceptación, archivos permitidos/prohibidos y
+  comandos de verificación esperados.
+- Optimizar recursos: modelos fuertes/razonamiento alto para arquitectura o decisiones
+  difíciles; razonamiento medio para core puro acotado; modelos pequeños/rápidos para
+  contenido repetible, fixtures y transformaciones simples.
+
 ## Cómo pedir tareas
 - Buenas: "Implementa `ResidentState` + un test unitario. No toques UI ni SaveSystem."
 - Malas: "Hazme el juego entero", "Mete IA a los personajes", "Refactoriza todo".
