@@ -5,7 +5,7 @@ Formato: entradas por fase/hito. Fechas en `YYYY-MM-DD`.
 ## [F2.6 - visual direction] - 2026-07-07
 
 ### Added (design only; no gameplay code)
-- `docs/art_bible.md`: full 2D art bible by Fable 5 - Direction B "Storybook with
+- `docs/art_library.md`: full 2D art library by Fable 5 - Direction B "Storybook with
   volume" (warm outlines + cel shading + soft gradient), 2.7-heads chibi construction,
   modular 12-layer avatar stack with skin-reveal metadata and palette-swap triplets,
   10-tone realistic skin ramp (Monk-inspired), 9 expression states grammar, render
@@ -15,7 +15,7 @@ Formato: entradas por fase/hito. Fechas en `YYYY-MM-DD`.
 - `docs/adr/0006-art-direction-storybook-2d.md`: direction decision, alternatives
   discarded (prerender, vinyl, hybrid, 3D), explicit libraries decision (no new
   runtime dependency yet; atlas revisited with ADR past ~50 sprites).
-- CODEMAP F2.6 updated to DONE (art bible) with pilot gate pending.
+- CODEMAP F2.6 updated to DONE (art library) with pilot gate pending.
 
 ### Process
 - Direction chosen by the user from 3 Fable proposals anchored on user-provided

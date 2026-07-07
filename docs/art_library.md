@@ -1,10 +1,10 @@
-# Art Bible - Cotilleo Island (F2.6)
+# Art Library - Cotilleo Island (F2.6)
 
 > Status: v1 approved direction ("Storybook with volume", Direction B - see ADR 0006).
 > Author: Fable 5 (interactive session), with the user as taste gate at every checkpoint.
 > Scope: visual design only. This document changes no gameplay, no SaveSystem, no core.
 > References: 4 style images provided by the user, to be stored in `docs/art/references/`
-> (drop the PNGs there manually; this bible cites them as the style anchor).
+> (drop the PNGs there manually; this art library cites them as the style anchor).
 
 ## 1. Style pillars
 
@@ -214,7 +214,7 @@ reference
 
 | work | owner |
 |---|---|
-| this bible, direction reviews, new visual systems | Fable (design only) |
+| this art library, direction reviews, new visual systems | Fable (design only) |
 | sprite/portrait/icon generation per templates | image model (user-driven), user = taste gate |
 | catalog metadata JSON (names, rarity, tags, skin-reveal flags) | Haiku / GPT mini |
 | layer compositing code, loading, tweens, F3.4 scene UI | Sonnet / Codex |
@@ -225,7 +225,7 @@ reference
 No 3D engine or migration - no advanced face editor (face identity in V1 = skin tone +
 eye color + hairstyle + expressions; face-shape sliders deferred) - no babies - no open
 world - no public shop - no free-form conversational AI - keep clear IP distance from
-Nintendo/Mii aesthetics (proportions, eyes and UI are original per this bible).
+Nintendo/Mii aesthetics (proportions, eyes and UI are original per this art library).
 
 ## 13. Pilot acceptance (checkpoint 3, before mass production)
 

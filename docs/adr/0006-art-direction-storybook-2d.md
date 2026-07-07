@@ -15,7 +15,7 @@ large future wardrobe: clothes, accessories, tattoos, hairstyles, realistic skin
 Adopt **Direction B - "Storybook with volume"**: expressive warm-brown variable-weight
 outlines + two-tone cel shading + one soft gradient pass for volume, fixed top-left
 key light, big glossy double-highlight eyes, 2.7-heads chibi proportions. Full spec in
-`docs/art_bible.md` (layer stack, 10-tone realistic skin ramp, 9 expression states,
+`docs/art_library.md` (layer stack, 10-tone realistic skin ramp, 9 expression states,
 export rules, tween-based V1 animation, prompt templates, delegation map).
 
 **Libraries decision (explicit F2.6 requirement):** no new runtime library yet. Phaser
@@ -26,14 +26,14 @@ loads plain PNGs now; atlas packing reconsidered (with its own ADR) past ~50 spr
 |---|---|
 | A - "Cozy Prerender" (outline-less soft-3D look) | Most elaborate in mockups, but fragile in production: modular layers and AI-generated batches drift without an outline to hide seams; strict global lighting hard to keep consistent |
 | C - "Vinyl diorama" (matte clay materials) | Strongest own identity, but tattoos/prints read poorly on matte-clay skin, conflicting with the wardrobe/tattoo ambition |
-| Hybrid B sprites + A portraits | Two rulesets to maintain in the bible and in every batch; rejected for now, can be revisited after the pilot |
+| Hybrid B sprites + A portraits | Two rulesets to maintain in the art library and in every batch; rejected for now, can be revisited after the pilot |
 | 3D or 2.5D engine change | Already excluded by product decision in CODEMAP F2.6 (2D Phaser stays) |
 
 ## Consequences
-- F3.4 scene UI consumes the bible's bubble/icon/pose language (8 scene icons map 1:1
+- F3.4 scene UI consumes the art library's bubble/icon/pose language (8 scene icons map 1:1
   to F3 SceneTypes; ad-hoc F2 hunger bubble gets replaced).
 - Expression rendering will be a pure projection (SceneIntent + needs + personality ->
   avatarExpression), extending ADR 0004; never persisted.
 - Wardrobe scale is enabled by data, not art: skin-reveal metadata + palette-swap
   triplets; one garment drawing yields N recolors.
-- Pilot gate (bible section 13) must pass user approval before any mass asset batch.
+- Pilot gate (art library section 13) must pass user approval before any mass asset batch.
