@@ -26,7 +26,7 @@ Mapa de módulos previstos. Se rellena a medida que se implementan (Fase 1: sist
 | **Dialogue** | `src/dialogue/` | V1: plantillas (`TemplateDialogueGenerator`); V2: IA (`DialogueGenerator`) | pendiente |
 | **AI** (opcional) | `src/ai/` | DialogueEnhancer, DailyNarrator, MemorySummarizer, CatchphraseGenerator, EventSuggestor validado | pendiente |
 | **Save** | `src/save/` | `StoragePort` (`IndexedDbStorage` / `InMemoryStorage`) + `SaveSystem` (CRUD de residentes, `SaveState` versionado, migración, decaimiento de necesidades al cargar) | **Fase 2.3: persistencia de necesidades implementada** (export/import manual pendiente) |
-| **UI** | `src/ui/` | `IslandScene` (Phaser, placeholder de residente "en su casa") + `resident-panel` (overlay DOM: crear/editar nombre y personalidad) | **Fase 1: implementado como placeholder** (sin isla/mapa real, un solo residente en pantalla) |
+| **UI** | `src/ui/` | `IslandScene` (Phaser, placeholder de residente "en su casa") + `resident-panel` (overlay DOM: crear/editar nombre, personalidad y dar comida) | **Fase 2.4: UI mínima de hambre/comida implementada** (sin reacción narrativa aún) |
 | **Data** | `src/data/` | Catálogo de comidas (`foods.json`) + validación/exports (`foods.ts`) ahora; después residentes mock, eventos y plantillas | **Fase 2.2: comidas implementadas** |
 
 ## Fase 1.2 — personalidad: sliders → tags/categoría/expresión
@@ -70,6 +70,14 @@ Mapa de módulos previstos. Se rellena a medida que se implementan (Fase 1: sist
 - `SaveSystem.applyNeedsDecay(nowMs?)` carga, decae necesidades con `decayNeeds`, persiste
   el resultado y actualiza `needsUpdatedAtMs`. Queda listo para que F2.4 lo llame al abrir
   la isla, sin tocar UI todavía.
+
+## Fase 2.4 — UI mínima de hambre/comida
+- `src/main.ts` aplica `SaveSystem.applyNeedsDecay()` al abrir antes de renderizar.
+- `src/ui/island-scene.ts` muestra resumen de necesidades y burbuja de hambre si
+  `needsToStatus` detecta hambre alta/urgente.
+- `src/ui/resident-panel.ts` permite elegir una comida de `FOOD_CATALOG`, aplicar su
+  `FoodEffect`, guardar el residente y re-renderizar la escena. La reacción textual queda
+  para F2.5.
 
 ## Fase 1 — detalle de implementación
 - `src/core/{ids,personality,needs,avatar,resident}.ts`: tipos de dominio puros (sin Phaser, sin storage).

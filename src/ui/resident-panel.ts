@@ -1,12 +1,17 @@
 import type { Resident } from "@/core/resident";
 import { PERSONALITY_KEYS, type Personality } from "@/core/personality";
+import { applyFoodEffect, needsToStatus } from "@/core/needs";
+import type { FoodItem } from "@/data/foods";
 import { updateResident, ResidentValidationError } from "@/residents/factory";
 
 export interface ResidentPanelOptions {
   container: HTMLElement;
   resident: Resident;
+  foods?: readonly FoodItem[];
   /** Llamado con el residente ya validado, tras pulsar "Guardar". */
   onSave: (updated: Resident) => Promise<void> | void;
+  /** Llamado con el residente actualizado tras darle comida. */
+  onGiveFood?: (updated: Resident, food: FoodItem) => Promise<void> | void;
 }
 
 export interface ResidentPanel {
@@ -30,7 +35,7 @@ const PERSONALITY_LABELS: Record<keyof Personality, string> = {
  * solo construye el DOM y traduce eventos de input a llamadas de dominio.
  */
 export function mountResidentPanel(options: ResidentPanelOptions): ResidentPanel {
-  const { container, onSave } = options;
+  const { container, foods = [], onGiveFood, onSave } = options;
   let current = options.resident;
 
   container.innerHTML = "";
@@ -89,6 +94,33 @@ export function mountResidentPanel(options: ResidentPanelOptions): ResidentPanel
   saveButton.textContent = "Guardar";
   container.appendChild(saveButton);
 
+  const needsTitle = document.createElement("h3");
+  needsTitle.textContent = "Necesidades";
+  container.appendChild(needsTitle);
+
+  const needsSummary = document.createElement("p");
+  needsSummary.className = "resident-panel__needs";
+  container.appendChild(needsSummary);
+
+  const foodLabel = document.createElement("label");
+  foodLabel.textContent = "Comida";
+  foodLabel.htmlFor = "resident-food-select";
+  const foodSelect = document.createElement("select");
+  foodSelect.id = "resident-food-select";
+  for (const food of foods) {
+    const option = document.createElement("option");
+    option.value = food.id;
+    option.textContent = food.name;
+    foodSelect.appendChild(option);
+  }
+  container.append(foodLabel, foodSelect);
+
+  const giveFoodButton = document.createElement("button");
+  giveFoodButton.type = "button";
+  giveFoodButton.textContent = "Dar comida";
+  giveFoodButton.disabled = foods.length === 0 || onGiveFood === undefined;
+  container.appendChild(giveFoodButton);
+
   function syncInputs(resident: Resident): void {
     nameInput.value = resident.name;
     for (const key of PERSONALITY_KEYS) {
@@ -96,6 +128,14 @@ export function mountResidentPanel(options: ResidentPanelOptions): ResidentPanel
       sliders[key].value = value;
       sliderValueLabels[key].textContent = value;
     }
+    const status = needsToStatus(resident.needs);
+    const hungerLabel = status.urgentlyNeedsFood
+      ? "hambre urgente"
+      : status.wantsFood
+        ? "tiene hambre"
+        : "sin hambre";
+    const moodLabel = status.lowMood ? "ánimo bajo" : "ánimo estable";
+    needsSummary.textContent = `Hambre ${resident.needs.hunger}/100 (${hungerLabel}) · Ánimo ${resident.needs.mood}/100 (${moodLabel})`;
     errorBox.textContent = "";
   }
 
@@ -111,6 +151,7 @@ export function mountResidentPanel(options: ResidentPanelOptions): ResidentPanel
         personality: personalityChanges,
       });
       current = updated;
+      syncInputs(current);
       errorBox.textContent = "";
       void onSave(updated);
     } catch (err) {
@@ -121,6 +162,19 @@ export function mountResidentPanel(options: ResidentPanelOptions): ResidentPanel
         throw err;
       }
     }
+  });
+
+  giveFoodButton.addEventListener("click", () => {
+    const selectedFood = foods.find((food) => food.id === foodSelect.value);
+    if (!selectedFood || !onGiveFood) return;
+
+    const updated: Resident = {
+      ...current,
+      needs: applyFoodEffect(current.needs, selectedFood),
+    };
+    current = updated;
+    syncInputs(current);
+    void onGiveFood(updated, selectedFood);
   });
 
   syncInputs(current);

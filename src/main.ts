@@ -6,12 +6,16 @@ import "@/ui/panel.css";
 import { IndexedDbStorage } from "@/save/indexeddb-storage";
 import { SaveSystem } from "@/save/save-system";
 import { createResident } from "@/residents/factory";
+import { FOOD_CATALOG } from "@/data/foods";
 import { IslandScene, type IslandSceneData } from "@/ui/island-scene";
 import { mountResidentPanel } from "@/ui/resident-panel";
 
 async function bootstrap(): Promise<void> {
   const storage = new IndexedDbStorage();
   const saveSystem = new SaveSystem(storage);
+
+  // Al abrir la isla se aplica decaimiento de necesidades antes de renderizar.
+  await saveSystem.applyNeedsDecay();
 
   // Si hay un residente guardado, se carga; si no, se crea uno por defecto.
   const residents = await saveSystem.listResidents();
@@ -41,7 +45,13 @@ async function bootstrap(): Promise<void> {
     mountResidentPanel({
       container: panelContainer,
       resident,
+      foods: FOOD_CATALOG,
       onSave: async (updated) => {
+        await saveSystem.saveResident(updated);
+        const scene = game.scene.getScene(IslandScene.KEY) as IslandScene | null;
+        scene?.renderResident(updated);
+      },
+      onGiveFood: async (updated) => {
         await saveSystem.saveResident(updated);
         const scene = game.scene.getScene(IslandScene.KEY) as IslandScene | null;
         scene?.renderResident(updated);

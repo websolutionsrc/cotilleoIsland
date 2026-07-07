@@ -7,6 +7,7 @@ import {
   personalityToTags,
   type PersonalityCategory,
 } from "@/core/personality-derived";
+import { needsToStatus } from "@/core/needs";
 import { colorForAvatar } from "./avatar-palette";
 
 export interface IslandSceneData {
@@ -61,6 +62,8 @@ export class IslandScene extends Phaser.Scene {
   private nameText?: Phaser.GameObjects.Text;
   private personalityText?: Phaser.GameObjects.Text;
   private categoryText?: Phaser.GameObjects.Text;
+  private needsText?: Phaser.GameObjects.Text;
+  private hungerBubbleText?: Phaser.GameObjects.Text;
 
   constructor() {
     super(IslandScene.KEY);
@@ -99,6 +102,25 @@ export class IslandScene extends Phaser.Scene {
         wordWrap: { width: 460 },
       })
       .setOrigin(0.5, 0);
+    this.needsText = this.add
+      .text(0, 0, "", {
+        fontFamily: "sans-serif",
+        fontSize: "15px",
+        color: "#f8f1d8",
+        align: "center",
+        wordWrap: { width: 460 },
+      })
+      .setOrigin(0.5, 0);
+    this.hungerBubbleText = this.add
+      .text(0, 0, "", {
+        fontFamily: "sans-serif",
+        fontSize: "18px",
+        color: "#1f1720",
+        backgroundColor: "#fff3b0",
+        padding: { x: 12, y: 6 },
+        align: "center",
+      })
+      .setOrigin(0.5, 1);
 
     if (this.resident) {
       this.renderResident(this.resident);
@@ -122,7 +144,9 @@ export class IslandScene extends Phaser.Scene {
       !this.avatarGraphics ||
       !this.nameText ||
       !this.personalityText ||
-      !this.categoryText
+      !this.categoryText ||
+      !this.needsText ||
+      !this.hungerBubbleText
     ) {
       return;
     }
@@ -135,6 +159,7 @@ export class IslandScene extends Phaser.Scene {
     const category = personalityCategory(resident.personality);
     const tags = personalityToTags(resident.personality);
     const expression = personalityExpression(resident.personality);
+    const needsStatus = needsToStatus(resident.needs);
 
     this.drawHouse(CATEGORY_ACCENT[category]);
 
@@ -143,6 +168,11 @@ export class IslandScene extends Phaser.Scene {
     this.avatarGraphics.fillCircle(centerX, avatarY, 60);
     this.avatarGraphics.lineStyle(3, 0xffffff, 0.8);
     this.avatarGraphics.strokeCircle(centerX, avatarY, 60);
+
+    this.hungerBubbleText
+      .setText(needsStatus.urgentlyNeedsFood ? "¡Me muero de hambre!" : "Tengo hambre")
+      .setVisible(needsStatus.wantsFood)
+      .setPosition(centerX, avatarY - 74);
 
     this.nameText
       .setText(resident.name)
@@ -157,5 +187,14 @@ export class IslandScene extends Phaser.Scene {
       (key) => `${PERSONALITY_LABELS[key]}: ${resident.personality[key]}`,
     ).join("   ·   ");
     this.personalityText.setText(summary).setPosition(centerX, avatarY + 142);
+
+    const needsSummary = [
+      `Hambre: ${resident.needs.hunger}`,
+      `Ánimo: ${resident.needs.mood}`,
+      `Energía: ${resident.needs.energy}`,
+      `Social: ${resident.needs.social_need}`,
+      `Aburrimiento: ${resident.needs.boredom}`,
+    ].join("   ·   ");
+    this.needsText.setText(needsSummary).setPosition(centerX, avatarY + 174);
   }
 }

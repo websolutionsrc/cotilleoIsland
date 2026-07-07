@@ -19,6 +19,11 @@
   font-size: 18px;
 }
 
+#ui-panel h3 {
+  margin: 14px 0 6px;
+  font-size: 15px;
+}
+
 #ui-panel label {
   display: block;
   font-size: 13px;
@@ -26,7 +31,8 @@
   opacity: 0.85;
 }
 
-#ui-panel input[type="text"] {
+#ui-panel input[type="text"],
+#ui-panel select {
   width: 100%;
   box-sizing: border-box;
   padding: 6px 8px;
@@ -65,8 +71,16 @@
   font-size: 13px;
 }
 
+.resident-panel__needs {
+  margin: 0 0 8px;
+  color: #f8f1d8;
+  font-size: 13px;
+  line-height: 1.35;
+}
+
 #ui-panel button {
   width: 100%;
+  margin-top: 8px;
   padding: 8px;
   border: none;
   border-radius: 6px;
@@ -78,4 +92,9 @@
 
 #ui-panel button:hover {
   background: #268069;
+}
+
+#ui-panel button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
 }
