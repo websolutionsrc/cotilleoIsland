@@ -86,10 +86,16 @@ describe("personalityCategory", () => {
     expect(personalityCategory(withTraits({ weirdness: 100 }))).toBe("Excéntrica");
   });
 
-  it("en empate exacto de score, gana la familia que aparece antes en la lista fija", () => {
-    // Personalidad neutra (todo 50): Sociable=100, Reservada=100, Cariñosa=100,
-    // Excéntrica=100. Empate a 4 bandas: gana "Sociable" (primera de la lista).
-    expect(personalityCategory(DEFAULT_PERSONALITY)).toBe("Sociable");
+  it("clasifica como Equilibrada un perfil neutro (sin rasgos extremos)", () => {
+    // Todo 50: ningún rasgo es extremo -> Equilibrada (no cae en "Sociable").
+    expect(personalityCategory(DEFAULT_PERSONALITY)).toBe("Equilibrada");
+    // Perfil suave pero sin extremos (65/60): sigue siendo Equilibrada.
+    expect(personalityCategory(withTraits({ sociability: 65, energy: 60 }))).toBe("Equilibrada");
+  });
+
+  it("con al menos un rasgo extremo, deja de ser Equilibrada", () => {
+    // energy=70 es extremo -> se evalúan las familias por score (Sociable gana).
+    expect(personalityCategory(withTraits({ energy: 70 }))).toBe("Sociable");
   });
 });
 

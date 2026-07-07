@@ -81,17 +81,31 @@ export function personalityToTags(p: Personality): string[] {
   return tags.length > 0 ? tags : ["equilibrada"];
 }
 
-/** Las 4 familias amplias de personalidad (inspiradas en, pero no iguales a, Tomodachi Life). */
-export type PersonalityCategory = "Sociable" | "Reservada" | "Cariñosa" | "Excéntrica";
+/** Las 5 familias amplias de personalidad (inspiradas en, pero no iguales a, Tomodachi Life). */
+export type PersonalityCategory =
+  | "Sociable"
+  | "Reservada"
+  | "Cariñosa"
+  | "Excéntrica"
+  | "Equilibrada";
+
+/** True si algún slider está en banda extrema (|v-50| >= EXTREME_DISTANCE, es decir >=70 o <=30). */
+function hasExtremeTrait(p: Personality): boolean {
+  return PERSONALITY_KEYS.some((key) => Math.abs(p[key] - MID_POINT) >= EXTREME_DISTANCE);
+}
 
 /**
- * Clasifica la personalidad en una de 4 familias amplias, usadas solo para dar
+ * Clasifica la personalidad en una de 5 familias amplias, usadas solo para dar
  * identidad visual rápida por defecto (color de avatar/tono), nunca como dato
- * editable ni persistido. Determinista: calcula un score 0-200 por familia a
- * partir de los sliders relevantes y elige el máximo; en empate exacto gana la
- * familia que aparece antes en la lista fija de abajo.
+ * editable ni persistido. Determinista:
+ * - Si ningún rasgo es extremo (perfil plano ~50), es "Equilibrada" (coherente
+ *   con `personalityToTags`, que en ese caso devuelve ["equilibrada"]).
+ * - Si no, calcula un score 0-200 por familia a partir de los sliders relevantes
+ *   y elige el máximo; en empate exacto gana la que aparece antes en la lista.
  */
 export function personalityCategory(p: Personality): PersonalityCategory {
+  if (!hasExtremeTrait(p)) return "Equilibrada";
+
   const scores: { name: PersonalityCategory; score: number }[] = [
     // Alta sociabilidad + energía: le gusta estar rodeada de gente y moverse.
     { name: "Sociable", score: p.sociability + p.energy },

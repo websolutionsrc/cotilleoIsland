@@ -67,7 +67,7 @@ editables por separado:
 Personality (sliders, persistidos)
         │
         ├─ personalityToTags(p)        → hasta 3 tags de texto (p.ej. "enérgica", "impaciente")
-        ├─ personalityCategory(p)      → 1 de 4 familias amplias ("Sociable"/"Reservada"/"Cariñosa"/"Excéntrica")
+        ├─ personalityCategory(p)      → 1 de 5 familias amplias ("Equilibrada"/"Sociable"/"Reservada"/"Cariñosa"/"Excéntrica")
         └─ personalityExpression(p)    → hint de pose/idle ("animada", "sonriente", "seria", "peculiar", "neutral")
 ```
 Consumido hoy por `src/ui/island-scene.ts` (muestra categoría/tags y tiñe el placeholder

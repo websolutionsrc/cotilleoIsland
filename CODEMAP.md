@@ -19,8 +19,9 @@ Mapa de módulos previstos. Se rellena a medida que se implementan (Fase 1: sist
 - `src/core/personality-derived.ts`: proyecciones puras y deterministas de los 6 sliders
   de `Personality` (única fuente de verdad; nada de esto se persiste ni se edita aparte):
   `personalityToTags` (hasta 3 tags por umbrales fijos: alto ≥ 70, bajo ≤ 30, ordenadas por
-  extremidad), `personalityCategory` (1 de 4 familias: `Sociable`/`Reservada`/`Cariñosa`/
-  `Excéntrica`, por score comparable 0–200) y `personalityExpression` (hint de pose/idle).
+  extremidad), `personalityCategory` (1 de 5 familias: `Equilibrada`/`Sociable`/
+  `Reservada`/`Cariñosa`/`Excéntrica`; perfiles sin rasgos extremos caen en `Equilibrada`,
+  y el resto por score comparable 0–200) y `personalityExpression` (hint de pose/idle).
   Reexportado desde el barrel `src/core/index.ts`.
 - `src/ui/island-scene.ts` consume las tres: muestra categoría + tags junto al resumen de
   personalidad y tiñe el nombre/el trazo de la "casa" placeholder según expresión/categoría

@@ -22,9 +22,11 @@ con "afinidad entre dos residentes concretos" en un único slider.
    implementadas en `src/core/personality-derived.ts` (TS puro, sin Phaser):
    - `personalityToTags(p)`: hasta 3 tags por umbrales fijos (alto ≥ 70, bajo ≤ 30),
      ordenadas por distancia a 50, desempate por orden fijo de `PERSONALITY_KEYS`.
-   - `personalityCategory(p)`: 1 de 4 familias amplias (`Sociable`, `Reservada`,
-     `Cariñosa`, `Excéntrica`) por score comparable 0–200, para dar identidad visual
-     rápida (acento de color) sin cerrar el sistema a 16 tipos fijos como Tomodachi.
+   - `personalityCategory(p)`: 1 de 5 familias amplias (`Equilibrada`, `Sociable`,
+     `Reservada`, `Cariñosa`, `Excéntrica`), para dar identidad visual rápida (acento de
+     color) sin cerrar el sistema a 16 tipos fijos como Tomodachi. Un perfil sin rasgos
+     extremos (todos ~50) es `Equilibrada`; en caso contrario gana la familia con mayor
+     score comparable 0–200.
    - `personalityExpression(p)`: hint mínimo de pose/idle para el render.
    Ninguna de las tres se persiste ni se edita por separado; se recalculan siempre a
    partir de los sliders guardados.

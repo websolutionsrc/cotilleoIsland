@@ -28,6 +28,7 @@ const PERSONALITY_LABELS: Record<keyof Personality, string> = {
  * dato de dominio ni se guardan — se recalculan siempre desde la personalidad.
  */
 const CATEGORY_ACCENT: Record<PersonalityCategory, number> = {
+  Equilibrada: 0xffffff,
   Sociable: 0xe07a5f,
   Reservada: 0x3d5a80,
   Cariñosa: 0xe8a55c,

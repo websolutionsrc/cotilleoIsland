@@ -35,11 +35,12 @@ Implementado en `src/core/personality-derived.ts` (TS puro, sin Phaser):
   ordenadas por distancia a 50 (desempate: orden fijo de `PERSONALITY_KEYS`).
   Si ningún rasgo es extremo, devuelve `["equilibrada"]`. `romanticism` bajo no
   genera tag propia (no hay opuesto natural a "romántica").
-- `personalityCategory(p): PersonalityCategory` — una de 4 familias amplias
-  (`"Sociable"`, `"Reservada"`, `"Cariñosa"`, `"Excéntrica"`), por score 0–200
-  a partir de los sliders relevantes; en empate exacto gana la familia que
-  aparece antes en esa lista fija. Solo para identidad visual rápida (acento de
-  color en la UI), nunca dato editable.
+- `personalityCategory(p): PersonalityCategory` — una de 5 familias amplias
+  (`"Equilibrada"`, `"Sociable"`, `"Reservada"`, `"Cariñosa"`, `"Excéntrica"`).
+  Si ningún rasgo está en banda extrema, devuelve `"Equilibrada"`; si hay al
+  menos uno extremo, calcula scores 0–200 a partir de los sliders relevantes y
+  en empate exacto gana la familia que aparece antes en esa lista fija. Solo
+  para identidad visual rápida (acento de color en la UI), nunca dato editable.
 - `personalityExpression(p): string` — hint mínimo de pose/idle
   (`"animada"`, `"sonriente"`, `"seria"`, `"peculiar"`, `"neutral"`) por
   prioridad fija sobre el rasgo dominante.
