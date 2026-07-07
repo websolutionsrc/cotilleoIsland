@@ -2,6 +2,7 @@ import type { Resident } from "@/core/resident";
 import { PERSONALITY_KEYS, type Personality } from "@/core/personality";
 import { applyFoodEffect, needsToStatus } from "@/core/needs";
 import type { FoodItem } from "@/data/foods";
+import { foodReactionFor } from "@/dialogue/food-reactions";
 import { updateResident, ResidentValidationError } from "@/residents/factory";
 
 export interface ResidentPanelOptions {
@@ -11,7 +12,7 @@ export interface ResidentPanelOptions {
   /** Llamado con el residente ya validado, tras pulsar "Guardar". */
   onSave: (updated: Resident) => Promise<void> | void;
   /** Llamado con el residente actualizado tras darle comida. */
-  onGiveFood?: (updated: Resident, food: FoodItem) => Promise<void> | void;
+  onGiveFood?: (updated: Resident, food: FoodItem, reaction: string) => Promise<void> | void;
 }
 
 export interface ResidentPanel {
@@ -121,6 +122,10 @@ export function mountResidentPanel(options: ResidentPanelOptions): ResidentPanel
   giveFoodButton.disabled = foods.length === 0 || onGiveFood === undefined;
   container.appendChild(giveFoodButton);
 
+  const reactionBox = document.createElement("p");
+  reactionBox.className = "resident-panel__reaction";
+  container.appendChild(reactionBox);
+
   function syncInputs(resident: Resident): void {
     nameInput.value = resident.name;
     for (const key of PERSONALITY_KEYS) {
@@ -172,9 +177,16 @@ export function mountResidentPanel(options: ResidentPanelOptions): ResidentPanel
       ...current,
       needs: applyFoodEffect(current.needs, selectedFood),
     };
+    const reaction = foodReactionFor({
+      resident: current,
+      food: selectedFood,
+      beforeNeeds: current.needs,
+      afterNeeds: updated.needs,
+    });
     current = updated;
     syncInputs(current);
-    void onGiveFood(updated, selectedFood);
+    reactionBox.textContent = reaction;
+    void onGiveFood(updated, selectedFood, reaction);
   });
 
   syncInputs(current);
@@ -183,6 +195,7 @@ export function mountResidentPanel(options: ResidentPanelOptions): ResidentPanel
     setResident(resident: Resident) {
       current = resident;
       syncInputs(resident);
+      reactionBox.textContent = "";
     },
   };
 }

@@ -78,6 +78,14 @@
   line-height: 1.35;
 }
 
+.resident-panel__reaction {
+  min-height: 2.4em;
+  margin: 10px 0 0;
+  color: #d6f5e9;
+  font-size: 13px;
+  line-height: 1.35;
+}
+
 #ui-panel button {
   width: 100%;
   margin-top: 8px;

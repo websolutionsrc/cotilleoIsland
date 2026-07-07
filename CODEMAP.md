@@ -23,10 +23,10 @@ Mapa de módulos previstos. Se rellena a medida que se implementan (Fase 1: sist
 | **Residents** | `src/residents/` | `createResident`/`updateResident` (defaults + validación pura de nombre y personalidad) | **Fase 1: implementado** (sin inventario/nivel aún) |
 | **Relationships** | `src/relationships/` | Amistad, confianza, tensión, romance, historial resumido, `chemistry` de pareja (F4) | **pendiente F4** |
 | **Events** | `src/events/` | Detecta eventos, puntúa, evita repetición, genera `SceneIntent` | pendiente |
-| **Dialogue** | `src/dialogue/` | V1: plantillas (`TemplateDialogueGenerator`); V2: IA (`DialogueGenerator`) | pendiente |
+| **Dialogue** | `src/dialogue/` | V1: plantillas (`food-reactions.ts` ahora; `TemplateDialogueGenerator` después); V2: IA (`DialogueGenerator`) | **Fase 2.5: reacción de comida implementada** |
 | **AI** (opcional) | `src/ai/` | DialogueEnhancer, DailyNarrator, MemorySummarizer, CatchphraseGenerator, EventSuggestor validado | pendiente |
 | **Save** | `src/save/` | `StoragePort` (`IndexedDbStorage` / `InMemoryStorage`) + `SaveSystem` (CRUD de residentes, `SaveState` versionado, migración, decaimiento de necesidades al cargar) | **Fase 2.3: persistencia de necesidades implementada** (export/import manual pendiente) |
-| **UI** | `src/ui/` | `IslandScene` (Phaser, placeholder de residente "en su casa") + `resident-panel` (overlay DOM: crear/editar nombre, personalidad y dar comida) | **Fase 2.4: UI mínima de hambre/comida implementada** (sin reacción narrativa aún) |
+| **UI** | `src/ui/` | `IslandScene` (Phaser, placeholder de residente "en su casa") + `resident-panel` (overlay DOM: crear/editar nombre, personalidad, dar comida y mostrar reacción) | **Fase 2.5: vertical de hambre/comida implementado** |
 | **Data** | `src/data/` | Catálogo de comidas (`foods.json`) + validación/exports (`foods.ts`) ahora; después residentes mock, eventos y plantillas | **Fase 2.2: comidas implementadas** |
 
 ## Fase 1.2 — personalidad: sliders → tags/categoría/expresión
@@ -78,6 +78,14 @@ Mapa de módulos previstos. Se rellena a medida que se implementan (Fase 1: sist
 - `src/ui/resident-panel.ts` permite elegir una comida de `FOOD_CATALOG`, aplicar su
   `FoodEffect`, guardar el residente y re-renderizar la escena. La reacción textual queda
   para F2.5.
+
+## Fase 2.5 — reacción por plantilla
+- `src/dialogue/food-reactions.ts`: función pura `foodReactionFor` que genera una frase
+  breve al dar comida según cambio de hambre/ánimo, sin IA ni EventEngine.
+- `src/ui/resident-panel.ts` muestra la reacción tras dar comida y la pasa a `main.ts`.
+- `src/ui/island-scene.ts` muestra la reacción como burbuja textual simple del residente.
+- Con esto Fase 2 queda cerrada: abrir isla → decaen necesidades → residente puede tener
+  hambre → jugador da comida → se guarda → residente reacciona.
 
 ## Fase 1 — detalle de implementación
 - `src/core/{ids,personality,needs,avatar,resident}.ts`: tipos de dominio puros (sin Phaser, sin storage).

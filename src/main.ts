@@ -51,10 +51,11 @@ async function bootstrap(): Promise<void> {
         const scene = game.scene.getScene(IslandScene.KEY) as IslandScene | null;
         scene?.renderResident(updated);
       },
-      onGiveFood: async (updated) => {
+      onGiveFood: async (updated, _food, reaction) => {
         await saveSystem.saveResident(updated);
         const scene = game.scene.getScene(IslandScene.KEY) as IslandScene | null;
         scene?.renderResident(updated);
+        scene?.showResidentMessage(reaction);
       },
     });
   }

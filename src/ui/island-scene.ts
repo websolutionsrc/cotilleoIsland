@@ -64,6 +64,7 @@ export class IslandScene extends Phaser.Scene {
   private categoryText?: Phaser.GameObjects.Text;
   private needsText?: Phaser.GameObjects.Text;
   private hungerBubbleText?: Phaser.GameObjects.Text;
+  private reactionText?: Phaser.GameObjects.Text;
 
   constructor() {
     super(IslandScene.KEY);
@@ -121,6 +122,18 @@ export class IslandScene extends Phaser.Scene {
         align: "center",
       })
       .setOrigin(0.5, 1);
+    this.reactionText = this.add
+      .text(0, 0, "", {
+        fontFamily: "sans-serif",
+        fontSize: "17px",
+        color: "#ffffff",
+        backgroundColor: "#27313a",
+        padding: { x: 12, y: 8 },
+        align: "center",
+        wordWrap: { width: 380 },
+      })
+      .setOrigin(0.5, 0)
+      .setVisible(false);
 
     if (this.resident) {
       this.renderResident(this.resident);
@@ -196,5 +209,10 @@ export class IslandScene extends Phaser.Scene {
       `Aburrimiento: ${resident.needs.boredom}`,
     ].join("   ·   ");
     this.needsText.setText(needsSummary).setPosition(centerX, avatarY + 174);
+  }
+
+  showResidentMessage(message: string): void {
+    if (!this.reactionText) return;
+    this.reactionText.setText(message).setPosition(400, 110).setVisible(true);
   }
 }
