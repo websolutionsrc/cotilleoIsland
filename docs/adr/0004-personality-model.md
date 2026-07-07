@@ -53,5 +53,6 @@ con "afinidad entre dos residentes concretos" en un único slider.
   la Fase 3 conecte `SceneIntent` a datos reales, no de texto escrito a mano.
 - `chemistry` (Fase 4) queda fuera de alcance de esta tarea; documentado como plan en
   `docs/data_model.md` (sección Relationship) y pendiente en `CODEMAP.md`.
-- `CURRENT_SCHEMA_VERSION` de `SaveState` no cambia (sigue en 2): esta ADR no añade ni
-  quita campos persistidos.
+- En el momento de esta ADR, `CURRENT_SCHEMA_VERSION` de `SaveState` no cambió (seguía en
+  2): esta ADR no añadió ni quitó campos persistidos. F2.3 sube posteriormente el esquema
+  a v3 por persistencia de necesidades.

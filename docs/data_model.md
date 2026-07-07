@@ -3,6 +3,7 @@
 Datos estructurados desde el principio. TypeScript + JSON. Persistencia local en
 **IndexedDB** (localForage), con esquema **versionado** y migraciones. Export/import
 manual en JSON. Ids estables y legibles (`resident_lina`, `guitar_01`).
+La versión actual del `SaveState` es **3**.
 
 ## Resident
 ```json
@@ -14,6 +15,9 @@ manual en JSON. Ids estables y legibles (`resident_lina`, `guitar_01`).
 }
 ```
 Necesidades V1 (0–100): `hunger`, `mood`, `energy`, `social_need`, `boredom`.
+En Fase 2.3, el `SaveState` guarda `needsUpdatedAtMs` (timestamp Unix en ms, o
+`null` si aún no hay referencia temporal) para poder aplicar decaimiento al abrir
+la isla sin depender de UI ni de Phaser.
 `kindness` (amabilidad/calidez) se añadió en Fase 1.1: eje que en fases futuras (diálogo,
 Event Engine) disparará escenas de conflicto/ayuda. Por ahora es solo dato, sin lógica asociada.
 

@@ -4,6 +4,7 @@ import { SaveSystem, SAVE_STATE_KEY } from "@/save/save-system";
 import { CURRENT_SCHEMA_VERSION, migrateSaveState } from "@/save/save-state";
 import { createResident } from "@/residents/factory";
 import { DEFAULT_PERSONALITY } from "@/core/personality";
+import { DEFAULT_NEEDS } from "@/core/needs";
 
 describe("SaveSystem con InMemoryStorage", () => {
   let storage: InMemoryStorage;
@@ -20,6 +21,7 @@ describe("SaveSystem con InMemoryStorage", () => {
       schemaVersion: CURRENT_SCHEMA_VERSION,
       residents: [],
       activeResidentId: null,
+      needsUpdatedAtMs: null,
     });
   });
 
@@ -62,6 +64,46 @@ describe("SaveSystem con InMemoryStorage", () => {
     expect(state.activeResidentId).toBe(resident.id);
   });
 
+  it("guardar un residente inicializa la marca temporal de necesidades", async () => {
+    const storage = new InMemoryStorage();
+    const saveSystem = new SaveSystem(storage, () => 1234);
+    const resident = createResident({ name: "Lina" });
+
+    const state = await saveSystem.saveResident(resident);
+
+    expect(state.needsUpdatedAtMs).toBe(1234);
+  });
+
+  it("applyNeedsDecay decae necesidades y persiste la nueva marca temporal", async () => {
+    const storage = new InMemoryStorage();
+    const saveSystem = new SaveSystem(storage, () => 0);
+    const resident = createResident({ name: "Lina", needs: { hunger: 20, mood: 70 } });
+    await saveSystem.saveResident(resident);
+
+    const next = await saveSystem.applyNeedsDecay(60 * 60 * 1000);
+    const decayed = next.residents[0];
+
+    expect(next.needsUpdatedAtMs).toBe(60 * 60 * 1000);
+    expect(decayed?.needs.hunger).toBeGreaterThan(resident.needs.hunger);
+    expect(decayed?.needs.mood).toBeLessThan(resident.needs.mood);
+    await expect(saveSystem.loadState()).resolves.toEqual(next);
+  });
+
+  it("applyNeedsDecay solo siembra timestamp si el guardado no tenía marca temporal", async () => {
+    const resident = createResident({ name: "Nico" });
+    await storage.set(SAVE_STATE_KEY, {
+      schemaVersion: 3,
+      residents: [resident],
+      activeResidentId: resident.id,
+      needsUpdatedAtMs: null,
+    });
+
+    const next = await saveSystem.applyNeedsDecay(5000);
+
+    expect(next.needsUpdatedAtMs).toBe(5000);
+    expect(next.residents[0]).toEqual(resident);
+  });
+
   it("removeResident lo quita de la lista y limpia activeResidentId si era el activo", async () => {
     const resident = createResident({ name: "Lina" });
     await saveSystem.saveResident(resident);
@@ -92,6 +134,7 @@ describe("migrateSaveState (migraciones incrementales)", () => {
       schemaVersion: CURRENT_SCHEMA_VERSION,
       residents: [resident],
       activeResidentId: resident.id,
+      needsUpdatedAtMs: 123,
     };
 
     expect(migrateSaveState(state)).toEqual(state);
@@ -106,6 +149,7 @@ describe("migrateSaveState (migraciones incrementales)", () => {
     expect(migrated.schemaVersion).toBe(CURRENT_SCHEMA_VERSION);
     expect(migrated.residents).toEqual([]);
     expect(migrated.activeResidentId).toBeNull();
+    expect(migrated.needsUpdatedAtMs).toBeNull();
   });
 
   it("conserva los residentes de un guardado v0 que sí los tenía", () => {
@@ -117,6 +161,7 @@ describe("migrateSaveState (migraciones incrementales)", () => {
     expect(migrated.schemaVersion).toBe(CURRENT_SCHEMA_VERSION);
     expect(migrated.residents).toEqual([resident]);
     expect(migrated.activeResidentId).toBe(resident.id);
+    expect(migrated.needsUpdatedAtMs).toBeNull();
   });
 
   it("SaveSystem migra automáticamente un guardado antiguo al cargarlo", async () => {
@@ -130,6 +175,7 @@ describe("migrateSaveState (migraciones incrementales)", () => {
 
     expect(state.schemaVersion).toBe(CURRENT_SCHEMA_VERSION);
     expect(state.residents).toEqual([resident]);
+    expect(state.needsUpdatedAtMs).toBeNull();
   });
 
   it("migra un guardado v1 (sin `kindness`) a v2 rellenando el valor por defecto", () => {
@@ -144,8 +190,25 @@ describe("migrateSaveState (migraciones incrementales)", () => {
 
     const migrated = migrateSaveState(legacyRaw);
 
-    expect(migrated.schemaVersion).toBe(2);
+    expect(migrated.schemaVersion).toBe(CURRENT_SCHEMA_VERSION);
     expect(migrated.residents[0]?.personality.kindness).toBe(DEFAULT_PERSONALITY.kindness);
     expect(migrated.residents[0]?.personality).toEqual(resident.personality);
+    expect(migrated.residents[0]?.needs).toEqual(DEFAULT_NEEDS);
+    expect(migrated.needsUpdatedAtMs).toBeNull();
+  });
+
+  it("migra un guardado v2 a v3 normalizando necesidades parciales", () => {
+    const resident = createResident({ name: "Gala" });
+    const legacyRaw = {
+      schemaVersion: 2,
+      residents: [{ ...resident, needs: { hunger: 150 } }],
+      activeResidentId: resident.id,
+    };
+
+    const migrated = migrateSaveState(legacyRaw);
+
+    expect(migrated.schemaVersion).toBe(CURRENT_SCHEMA_VERSION);
+    expect(migrated.needsUpdatedAtMs).toBeNull();
+    expect(migrated.residents[0]?.needs).toEqual({ ...DEFAULT_NEEDS, hunger: 100 });
   });
 });

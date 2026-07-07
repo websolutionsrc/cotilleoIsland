@@ -16,6 +16,12 @@ Límites a vigilar: cuota de almacenamiento y rendimiento en Safari iPad; alguna
 nativas no disponibles; los datos de un PWA pueden purgarse si el SO necesita espacio
 (mitigación: export/import manual + `navigator.storage.persist()`).
 
+## Backlog de rendimiento
+- El build actual emite un warning no bloqueante de Vite/Rollup por chunk JS grande
+  (~1.5 MB sin comprimir, ~353 kB gzip), probablemente porque Phaser entra en el bundle
+  principal. No bloquea F2; revisar más adelante con code splitting/dynamic import o
+  `manualChunks` cuando haya una experiencia jugable que optimizar.
+
 ## Requisitos PWA
 - `manifest.webmanifest`: nombre, iconos (192/512), `display: standalone`, `theme_color`.
 - Service worker (via `vite-plugin-pwa` / Workbox) para offline y caché de assets.

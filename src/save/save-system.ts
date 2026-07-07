@@ -1,5 +1,6 @@
 import type { Resident } from "@/core/resident";
 import type { ResidentId } from "@/core/ids";
+import { decayNeeds } from "@/core/needs";
 import type { StoragePort } from "./storage-port";
 import {
   createEmptySaveState,
@@ -17,7 +18,10 @@ export const SAVE_STATE_KEY = "cotilleo:save-state";
  * lo que permite testearla con `InMemoryStorage` sin DOM.
  */
 export class SaveSystem {
-  constructor(private readonly storage: StoragePort) {}
+  constructor(
+    private readonly storage: StoragePort,
+    private readonly nowMs: () => number = Date.now,
+  ) {}
 
   /** Carga el `SaveState`, aplicando migraciones si hace falta. Nunca devuelve null. */
   async loadState(): Promise<SaveState> {
@@ -43,6 +47,36 @@ export class SaveSystem {
       ...state,
       residents,
       activeResidentId: state.activeResidentId ?? resident.id,
+      needsUpdatedAtMs: state.needsUpdatedAtMs ?? this.nowMs(),
+    };
+    await this.persistState(next);
+    return next;
+  }
+
+  /**
+   * Aplica el decaimiento temporal de necesidades y persiste el resultado.
+   * Diseñado para llamarse al abrir/cargar la isla, antes de renderizar UI.
+   */
+  async applyNeedsDecay(nowMs = this.nowMs()): Promise<SaveState> {
+    const state = await this.loadState();
+    if (state.residents.length === 0) return state;
+
+    if (state.needsUpdatedAtMs === null) {
+      const seeded: SaveState = { ...state, needsUpdatedAtMs: nowMs };
+      await this.persistState(seeded);
+      return seeded;
+    }
+
+    const elapsedMs = Math.max(0, nowMs - state.needsUpdatedAtMs);
+    if (elapsedMs === 0) return state;
+
+    const next: SaveState = {
+      ...state,
+      residents: state.residents.map((resident) => ({
+        ...resident,
+        needs: decayNeeds(resident.needs, elapsedMs),
+      })),
+      needsUpdatedAtMs: nowMs,
     };
     await this.persistState(next);
     return next;

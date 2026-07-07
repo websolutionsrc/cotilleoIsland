@@ -1,15 +1,17 @@
 import type { Resident } from "@/core/resident";
 import type { ResidentId } from "@/core/ids";
 import { DEFAULT_PERSONALITY, type Personality } from "@/core/personality";
+import { normalizeNeeds, type Needs } from "@/core/needs";
 
 /** Versión actual del esquema de guardado. Incrementar al cambiar la forma de `SaveState`. */
-export const CURRENT_SCHEMA_VERSION = 2;
+export const CURRENT_SCHEMA_VERSION = 3;
 
 /** Estado de guardado completo, versionado. Ver docs/data_model.md. */
 export interface SaveState {
   schemaVersion: number;
   residents: Resident[];
   activeResidentId: ResidentId | null;
+  needsUpdatedAtMs: number | null;
 }
 
 export function createEmptySaveState(): SaveState {
@@ -17,6 +19,7 @@ export function createEmptySaveState(): SaveState {
     schemaVersion: CURRENT_SCHEMA_VERSION,
     residents: [],
     activeResidentId: null,
+    needsUpdatedAtMs: null,
   };
 }
 
@@ -43,6 +46,7 @@ export function migrateSaveState(raw: UnknownSaveState): SaveState {
             typeof raw.activeResidentId === "string"
               ? (raw.activeResidentId as ResidentId)
               : null,
+          needsUpdatedAtMs: null,
         }
       : (raw as unknown as SaveState);
 
@@ -64,8 +68,26 @@ export function migrateSaveState(raw: UnknownSaveState): SaveState {
     };
   }
 
+  if (state.schemaVersion < 3) {
+    // v2 -> v3: F2 añade evolución temporal de necesidades. Los residentes de
+    // guardados anteriores pueden tener necesidades parciales; se normalizan y
+    // se añade una marca temporal de necesidades a nivel de SaveState.
+    state = {
+      ...state,
+      schemaVersion: 3,
+      needsUpdatedAtMs:
+        typeof (state as Partial<SaveState>).needsUpdatedAtMs === "number"
+          ? (state as SaveState).needsUpdatedAtMs
+          : null,
+      residents: state.residents.map((resident) => ({
+        ...resident,
+        needs: normalizeNeeds(resident.needs as Partial<Needs>),
+      })),
+    };
+  }
+
   // Punto de extensión para el siguiente paso de migración, p.ej.:
-  // if (state.schemaVersion < 3) { state = { ...state, schemaVersion: 3, ... }; }
+  // if (state.schemaVersion < 4) { state = { ...state, schemaVersion: 4, ... }; }
 
   return state;
 }
