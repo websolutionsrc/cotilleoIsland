@@ -57,6 +57,11 @@ export interface EventSuggestor     { suggest(snapshot: WorldSnapshot): SceneInt
 Guardado **local** en IndexedDB (localForage) con esquema versionado y migraciones.
 Export/import manual (JSON). Sin backend en V1. Ver [`data_model.md`](data_model.md).
 
+## Tags de personalidad de escena (Fase 3, principio)
+Las tags/tono de una escena (p.ej. "dramática", "impaciente") deben derivarse siempre de
+los sliders de `Personality` mediante una única función determinista (`personalityToTags`,
+Fase 3); no se autoescriben tags de texto sueltas por residente. Ver `data_model.md`.
+
 ## Consideración de rendimiento (PWA en iPad)
 Sprites 2D ligeros, atlas de texturas, poca lógica por frame (la simulación avanza por
 tick, no por frame). Validar almacenamiento/rendimiento en Safari iPad pronto.

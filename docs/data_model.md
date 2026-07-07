@@ -10,10 +10,12 @@ manual en JSON. Ids estables y legibles (`resident_lina`, `guitar_01`).
   "id": "resident_lina",
   "name": "Lina",
   "avatar": { "face": "round_01", "hair": "short_03", "eyes": "happy_02", "mouth": "small_01", "color": "warm_02" },
-  "personality": { "energy": 70, "sociability": 80, "patience": 35, "weirdness": 60, "romanticism": 40 }
+  "personality": { "energy": 70, "sociability": 80, "patience": 35, "weirdness": 60, "romanticism": 40, "kindness": 55 }
 }
 ```
 Necesidades V1 (0–100): `hunger`, `mood`, `energy`, `social_need`, `boredom`.
+`kindness` (amabilidad/calidez) se añadió en Fase 1.1: eje que en fases futuras (diálogo,
+Event Engine) disparará escenas de conflicto/ayuda. Por ahora es solo dato, sin lógica asociada.
 
 ## Relationship
 ```json
@@ -70,3 +72,21 @@ Progresión ejemplo:
 ## Guardado
 `SaveState` versionado (`schemaVersion`). Al cargar, aplicar migraciones si la versión
 del guardado es menor. Un `save_migration_checker` en `tools/` valida compatibilidad.
+Versión actual: **2** (v1 → v2: se añadió `kindness` a `Personality`; los guardados v1
+se rellenan con el valor por defecto al migrar).
+
+## Principio: las tags de escena se derivan de los sliders (no se escriben a mano)
+
+`docs/scene_intent_spec.md` usa un campo libre `tone` (p.ej. `"dramatic"`, `"shy"`) en sus
+ejemplos de `SceneIntent`. Eso es hoy una duplicidad en potencia respecto a los sliders
+numéricos de `Personality`: si alguien empieza a asignar tags de personalidad sueltas por
+residente (a mano, por escena), la personalidad tendría dos fuentes de verdad divergentes
+(los sliders y las tags de texto).
+
+Regla para Fase 3 (diálogo): las tags/tono de personalidad usados por escenas y plantillas
+**deben derivarse siempre** de los sliders mediante una única función determinista,
+`personalityToTags(personality: Personality): string[]` (o similar), nunca escribirse o
+editarse sueltas por residente. Los sliders (`Personality`) son la única fuente de verdad;
+`personalityToTags` es una proyección pura y determinista de esos sliders, no un dato
+independiente. Esta tarea **no** implementa esa función — solo documenta el contrato para
+cuando se aborde Fase 3.

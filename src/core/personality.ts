@@ -12,6 +12,8 @@ export interface Personality {
   weirdness: number;
   /** Predisposición al romance. */
   romanticism: number;
+  /** Amabilidad/calidez. Eje que en fases futuras disparará escenas de conflicto/ayuda. */
+  kindness: number;
 }
 
 export const PERSONALITY_KEYS: readonly (keyof Personality)[] = [
@@ -20,6 +22,7 @@ export const PERSONALITY_KEYS: readonly (keyof Personality)[] = [
   "patience",
   "weirdness",
   "romanticism",
+  "kindness",
 ];
 
 export const PERSONALITY_MIN = 0;
@@ -32,4 +35,5 @@ export const DEFAULT_PERSONALITY: Personality = {
   patience: 50,
   weirdness: 50,
   romanticism: 50,
+  kindness: 50,
 };

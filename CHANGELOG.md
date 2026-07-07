@@ -2,6 +2,26 @@
 
 Formato: entradas por fase/hito. Fechas en `YYYY-MM-DD`.
 
+## [Fase 1.1] — 2026-07-07
+
+### Añadido
+- **Core** (`src/core/personality.ts`): nuevo rasgo `kindness` (amabilidad/calidez,
+  0–100) en `Personality` y `PERSONALITY_KEYS`; default `50` en `DEFAULT_PERSONALITY`.
+  Cubierto automáticamente por `validatePersonality` (itera `PERSONALITY_KEYS`).
+- **UI**: nuevo slider "Amabilidad" en el panel de edición (`resident-panel.ts`) y en el
+  resumen de personalidad de `IslandScene` (`island-scene.ts`).
+- **Save**: `CURRENT_SCHEMA_VERSION` sube a **2**. Nuevo paso de migración incremental
+  v1 → v2 en `migrateSaveState` (`save-state.ts`) que rellena `kindness` con el valor por
+  defecto en cualquier residente guardado que no lo tenga (guardados v1). El paso v0 → v1
+  se mantiene sin cambios; las migraciones siguen siendo incrementales (nunca se salta de
+  v0 a v2 directamente). Test añadido en `tests/save-system.test.ts`.
+- Documentado en `docs/data_model.md` (y una línea en `docs/architecture.md`) el principio
+  para Fase 3: las tags/tono de personalidad de una escena (p.ej. "dramática", "impaciente",
+  el campo `tone` de `scene_intent_spec.md`) deben derivarse siempre de los sliders de
+  `Personality` mediante una única función determinista `personalityToTags(personality)`
+  (a implementar en Fase 3); no se autoescriben tags de texto sueltas por residente. Los
+  sliders son la única fuente de verdad. No se implementa la función en esta tarea.
+
 ## [Fase 1] — 2026-07-07
 
 ### Añadido

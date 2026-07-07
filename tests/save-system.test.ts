@@ -3,6 +3,7 @@ import { InMemoryStorage } from "@/save/in-memory-storage";
 import { SaveSystem, SAVE_STATE_KEY } from "@/save/save-system";
 import { CURRENT_SCHEMA_VERSION, migrateSaveState } from "@/save/save-state";
 import { createResident } from "@/residents/factory";
+import { DEFAULT_PERSONALITY } from "@/core/personality";
 
 describe("SaveSystem con InMemoryStorage", () => {
   let storage: InMemoryStorage;
@@ -84,7 +85,7 @@ describe("SaveSystem con InMemoryStorage", () => {
   });
 });
 
-describe("migrateSaveState (stub de migración)", () => {
+describe("migrateSaveState (migraciones incrementales)", () => {
   it("no cambia un SaveState que ya está en la versión actual", () => {
     const resident = createResident({ name: "Lina" });
     const state = {
@@ -101,7 +102,8 @@ describe("migrateSaveState (stub de migración)", () => {
 
     const migrated = migrateSaveState(legacyRaw);
 
-    expect(migrated.schemaVersion).toBe(1);
+    // v0 pasa por v1 y luego por v2 hasta llegar a la versión actual.
+    expect(migrated.schemaVersion).toBe(CURRENT_SCHEMA_VERSION);
     expect(migrated.residents).toEqual([]);
     expect(migrated.activeResidentId).toBeNull();
   });
@@ -112,7 +114,7 @@ describe("migrateSaveState (stub de migración)", () => {
 
     const migrated = migrateSaveState(legacyRaw);
 
-    expect(migrated.schemaVersion).toBe(1);
+    expect(migrated.schemaVersion).toBe(CURRENT_SCHEMA_VERSION);
     expect(migrated.residents).toEqual([resident]);
     expect(migrated.activeResidentId).toBe(resident.id);
   });
@@ -128,5 +130,22 @@ describe("migrateSaveState (stub de migración)", () => {
 
     expect(state.schemaVersion).toBe(CURRENT_SCHEMA_VERSION);
     expect(state.residents).toEqual([resident]);
+  });
+
+  it("migra un guardado v1 (sin `kindness`) a v2 rellenando el valor por defecto", () => {
+    const resident = createResident({ name: "Nico" });
+    const { kindness: _kindness, ...personalityWithoutKindness } = resident.personality;
+    const legacyResidentV1 = { ...resident, personality: personalityWithoutKindness };
+    const legacyRaw = {
+      schemaVersion: 1,
+      residents: [legacyResidentV1],
+      activeResidentId: resident.id,
+    };
+
+    const migrated = migrateSaveState(legacyRaw);
+
+    expect(migrated.schemaVersion).toBe(2);
+    expect(migrated.residents[0]?.personality.kindness).toBe(DEFAULT_PERSONALITY.kindness);
+    expect(migrated.residents[0]?.personality).toEqual(resident.personality);
   });
 });

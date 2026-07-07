@@ -22,11 +22,12 @@ Mapa de módulos previstos. Se rellena a medida que se implementan (Fase 1: sist
 - `src/save/storage-port.ts`: puerto `StoragePort` (`get/set/remove/keys`), implementado por
   `IndexedDbStorage` (runtime, localForage) e `InMemoryStorage` (tests). `SaveSystem` recibe el
   puerto por inyección y expone `saveResident/loadResident/listResidents/removeResident/loadState`.
-  `save-state.ts` define `SaveState` (`schemaVersion`) y el stub de migración `migrateSaveState`.
+  `save-state.ts` define `SaveState` (`schemaVersion`, actualmente **2**) y `migrateSaveState`,
+  con pasos incrementales v0→v1 y v1→v2 (v1→v2 rellena `kindness` con su valor por defecto).
 - `src/ui/{island-scene,resident-panel,avatar-palette}.ts` + `src/main.ts`: única capa que importa
   Phaser. Al arrancar carga el residente guardado (o crea uno por defecto), lo pinta en
-  `IslandScene` y monta el panel de edición (nombre + 5 sliders de personalidad) que persiste vía
-  `SaveSystem` y re-renderiza la escena.
+  `IslandScene` y monta el panel de edición (nombre + 6 sliders de personalidad, incluida
+  `kindness`) que persiste vía `SaveSystem` y re-renderiza la escena.
 
 ## Flujo de datos
 ```

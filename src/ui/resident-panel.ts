@@ -20,6 +20,7 @@ const PERSONALITY_LABELS: Record<keyof Personality, string> = {
   patience: "Paciencia",
   weirdness: "Rareza",
   romanticism: "Romanticismo",
+  kindness: "Amabilidad",
 };
 
 /**
