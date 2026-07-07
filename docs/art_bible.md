@@ -83,9 +83,11 @@ chestnut `#7B4B2A`, blonde `#C89B5A`, platinum `#E4D3AC`, red `#A8432A`, auburn
 lavender `#B79CD8` (ref image 4), mint `#9CCFB4`, sky `#8FB8D8`. Hairstyles are
 line-consistent with section 2; every style needs back+front layers.
 
-## 5. Facial expressions (the 9 required states)
+## 5. Facial expressions (14 states + 1 optional)
 
-Expression = ONE sprite swap (eyes + brows + mouth together). Grammar:
+Expression = ONE sprite swap (eyes + brows + mouth together). All faces are generated
+in a single sheet per character template (marginal cost of extra faces is near zero);
+runtime wiring is progressive - each face activates when its trigger exists. Grammar:
 
 | state | eyes | brows | mouth | extra |
 |---|---|---|---|---|
@@ -98,10 +100,28 @@ Expression = ONE sprite swap (eyes + brows + mouth together). Grammar:
 | lonely | big, looking down | soft inner-up | tiny closed | cooler blush tone |
 | surprised | round, wide | high | small "o" | - |
 | quirky | asymmetric (one wide, one squint) | asymmetric | tilted grin | sparkle near head |
+| angry | narrowed, flat top lid | steep inner-down | gritted frown | small vein mark / steam puff |
+| scared | wide, shrunk pupils | high inner-up | open wavy | sweat drop, cool tint on forehead |
+| anxious | side-glancing, small pupils | asymmetric inner-up | tight wavy | sweat drop + tick lines |
+| embarrassed | pressed closed or averted down | soft inner-up | small wobbly | heavy blush stripes, steam puff |
+| vigorous | sparkling, star highlight | determined down-out | big open grin | spark burst near head |
+| love (optional) | heart-shaped highlights | raised soft | soft smile | floating heart particle |
 
-Runtime mapping (for F3.4, implemented later by Sonnet/Codex, NOT persisted):
-`SceneIntent + needs + personality -> avatarExpression` as a pure projection
-(extends `personalityExpression` from ADR 0004; derived state is never saved).
+**Reachability map** (every face must have a real trigger; no dead art). Runtime
+mapping is a pure projection `SceneIntent + needs + personality + resolution outcome
+-> avatarExpression` (extends `personalityExpression`, ADR 0004; never persisted):
+
+- `angry`: F4 `argument` participants; negative food/resolution reactions when
+  patience is low or kindness is very low.
+- `anxious`: any need in the URGENT band (>= 90) - replaces the need's own face
+  (pairs with the F3 urgent-hunger cooldown exception).
+- `embarrassed`: F4 `flirt`/`confess`; compliments received by reserved personalities.
+- `vigorous`: idle when energy >= 80 and mood >= 70; positive resolutions for
+  energetic personalities.
+- `scared`: RESERVED - generated in the sheet now, wired when frightening events
+  exist (F5+ weather/pranks).
+- `love` (optional in batch): F4 `dating`/`partners` idle and romance resolutions.
+- Remaining 9: as in F3 design (need scenes, quirk, reactions, defaults).
 
 ## 6. Render targets and export rules
 
@@ -120,7 +140,8 @@ Runtime mapping (for F3.4, implemented later by Sonnet/Codex, NOT persisted):
 
 ## 7. Minimum V1 asset list (CODEMAP F2.6 requirement)
 
-1 body template (10 skin recolors) - 9 expression sprites - 6 hairstyles (back+front,
+1 body template (10 skin recolors) - 14 expression sprites (+1 optional `love`) -
+6 hairstyles (back+front,
 natural colors via triplets) - 6 garments (2 tops, 2 bottoms, 1 dress, 1 jacket) with
 skin-reveal metadata - 3 accessories (glasses ref image 3, earrings, held drink) -
 2 tattoos (forearm, neck) - panel portrait template - 8 scene icons:
@@ -181,9 +202,12 @@ background
 ```
 Expression sheet:
 ```
-same character face close-up, 9 expressions grid: neutral, happy, hungry with drool
+same character face close-up, 15 expressions grid: neutral, happy, hungry with drool
 drop, sad, tired half-lidded, bored looking aside, lonely looking down, surprised,
-quirky asymmetric, consistent line and shading with reference
+quirky asymmetric, angry gritted with steam puff, scared wide-eyed with sweat drop,
+anxious side-glancing with tick lines, embarrassed heavy blush with steam, vigorous
+sparkling determined grin, in-love heart-eyes, consistent line and shading with
+reference
 ```
 
 ## 11. Delegation map (who does what)
@@ -206,7 +230,8 @@ Nintendo/Mii aesthetics (proportions, eyes and UI are original per this bible).
 ## 13. Pilot acceptance (checkpoint 3, before mass production)
 
 One resident fully assembled from layers: 10-skin body template, 6 hairstyles x 1
-color each, 9 expressions, 2 garments + 1 accessory + 1 tattoo, panel portrait, the 8
+color each, 14 expressions (+1 optional `love`), 2 garments + 1 accessory + 1 tattoo,
+panel portrait, the 8
 scene icons - composited in the real island scene (Phaser) next to the reference
 images without visible style break, readable at 96 px, approved by the user. Only then
 mass production batches start (wardrobe, tattoos, hairstyles, colors).

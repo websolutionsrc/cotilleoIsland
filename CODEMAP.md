@@ -70,7 +70,10 @@ estabilizar el modelo de datos; plan de schema v4/v5/v6). Subfases previstas:
 ## F2.6 — 2D Visual Direction for Fable (art bible DONE; pilot pending)
 
 **Status 2026-07-07**: `docs/art_bible.md` written by Fable 5 (Direction B "Storybook
-with volume", chosen by the user from 3 proposals over 4 reference images; ADR 0006).
+with volume", chosen by the user from 3 proposals over the reference images; ADR 0006).
+Expression set extended on user request from the 9-face minimum to 14 (+1 optional
+`love`): adds angry, scared (reserved), anxious, embarrassed, vigorous - each with a
+reachability trigger documented in the bible (no dead art).
 Libraries decision: no new runtime library yet (plain PNGs; atlas + ADR past ~50
 sprites). Next gate: pilot asset pass (bible section 13) with user approval, then mass
 batches (image model + Haiku/mini metadata + Codex integration). Reference images must

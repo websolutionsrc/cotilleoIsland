@@ -18,8 +18,11 @@ Formato: entradas por fase/hito. Fechas en `YYYY-MM-DD`.
 - CODEMAP F2.6 updated to DONE (art bible) with pilot gate pending.
 
 ### Process
-- Direction chosen by the user from 3 Fable proposals anchored on 4 user-provided
-  reference images (to be stored in `docs/art/references/`).
+- Direction chosen by the user from 3 Fable proposals anchored on user-provided
+  reference images (stored in `docs/art/references/`).
+- Expression set extended on user request: 9 -> 14 states (+1 optional `love`),
+  adding angry, scared (reserved), anxious, embarrassed, vigorous, each with a
+  documented runtime trigger (pure projection, never persisted).
 
 ## [Fase 3 — diseño] — 2026-07-07
 
