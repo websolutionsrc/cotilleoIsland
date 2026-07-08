@@ -106,6 +106,26 @@ sparkle star, warm question mark, flat warm palette, transparent background, no 
 - [ ] Tattoo visible and readable on forearm in Task 3; hidden by jacket sleeve logic in Task 4 is OK
 - [ ] Icons: single concept each, readable at 64 px
 
+## Review log
+- `task1_v1.png` (2026-07-07, generated with GPT 5.5): **rejected**. Style PASS; failed
+  on (1) fake transparency (RGB, no alpha), (2) proportions ~3.5-3.8 heads vs 2.7 spec.
+- `task1_v2.png` (2026-07-07, GPT 5.5): style/compactness improved, BUT still RGB
+  without alpha (fake transparency). Confirms the general rule: GPT image outputs do not
+  carry a real alpha channel - a cutout step is mandatory (ADR 0007), not a prompt fix.
+
+## Production method (paper-doll) - ADR 0007
+Scope chosen: full modular paper-doll. Layers are produced by **edit-on-template + mask**,
+recolored by code tint. Next steps before any volume:
+1. **Clean cut** `task1_v2` (or a re-picked base) with an external tool (rembg / Photopea /
+   remove.bg) -> `docs/art/pilot/base_body_clean.png` with TRUE alpha. This becomes the
+   registration template; its pixel anchors (feet baseline, head center, hand/chest
+   sockets) are then measured and written here.
+2. **Prove one layer**: edit the template to add ONE simple garment (e.g. a tee), cut it,
+   and composite it over the body in a tiny Phaser preview tool (Codex/Sonnet). If it
+   aligns with no seam -> method validated.
+3. Only then start slot batches (hair, garments, accessories, tattoos) + tint recolors +
+   Haiku/mini manifests + Codex integration.
+
 ## Acceptance (closes the pilot gate)
 All 6 tasks approved -> layered cut (cleanup) -> composited over the real island scene
 next to the reference images with no visible style break -> user gives final OK.
