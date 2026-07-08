@@ -7,8 +7,10 @@ import { IndexedDbStorage } from "@/save/indexeddb-storage";
 import { SaveSystem } from "@/save/save-system";
 import { createResident } from "@/residents/factory";
 import { FOOD_CATALOG } from "@/data/foods";
+import { sceneTextFor } from "@/dialogue/scene-texts";
+import type { SceneIntent } from "@/events";
 import { IslandScene, type IslandSceneData } from "@/ui/island-scene";
-import { mountResidentPanel } from "@/ui/resident-panel";
+import { mountResidentPanel, type ResidentPanel } from "@/ui/resident-panel";
 
 async function bootstrap(): Promise<void> {
   const storage = new IndexedDbStorage();
@@ -28,8 +30,8 @@ async function bootstrap(): Promise<void> {
   const game = new Phaser.Game({
     type: Phaser.AUTO,
     parent: "game",
-    width: 800,
-    height: 480,
+    width: 960,
+    height: 600,
     backgroundColor: "#0f1720",
     scale: {
       mode: Phaser.Scale.FIT,
@@ -40,22 +42,51 @@ async function bootstrap(): Promise<void> {
   const sceneData: IslandSceneData = { resident };
   game.scene.add(IslandScene.KEY, IslandScene, true, sceneData);
 
+  let panel: ResidentPanel | null = null;
+  let activeScene: SceneIntent | null = null;
+  let activeSceneText: string | null = null;
+
+  async function refreshResidentAndScene(): Promise<void> {
+    const residents = await saveSystem.listResidents();
+    resident = residents.find((candidate) => candidate.id === resident.id) ?? residents[0] ?? resident;
+    activeScene = (await saveSystem.computeActiveScenes())[0] ?? null;
+    activeSceneText = activeScene ? sceneTextFor(activeScene, resident) : null;
+
+    const scene = game.scene.getScene(IslandScene.KEY) as IslandScene | null;
+    scene?.renderResident(resident);
+    scene?.showActiveScene(activeScene, activeSceneText);
+    panel?.setResident(resident);
+    panel?.setActiveScene(activeScene, activeSceneText);
+  }
+
+  await refreshResidentAndScene();
+
   const panelContainer = document.querySelector<HTMLDivElement>("#ui-panel");
   if (panelContainer) {
-    mountResidentPanel({
+    panel = mountResidentPanel({
       container: panelContainer,
       resident,
       foods: FOOD_CATALOG,
+      activeScene,
+      activeSceneText,
       onSave: async (updated) => {
         await saveSystem.saveResident(updated);
-        const scene = game.scene.getScene(IslandScene.KEY) as IslandScene | null;
-        scene?.renderResident(updated);
+        resident = updated;
+        await refreshResidentAndScene();
       },
       onGiveFood: async (updated, _food, reaction) => {
         await saveSystem.saveResident(updated);
+        resident = updated;
+        await refreshResidentAndScene();
         const scene = game.scene.getScene(IslandScene.KEY) as IslandScene | null;
-        scene?.renderResident(updated);
         scene?.showResidentMessage(reaction);
+      },
+      onResolveScene: async (intent, action) => {
+        const nextState = await saveSystem.resolveScene(intent, action);
+        resident = nextState.residents.find((candidate) => candidate.id === resident.id) ?? resident;
+        await refreshResidentAndScene();
+        const scene = game.scene.getScene(IslandScene.KEY) as IslandScene | null;
+        scene?.showResolutionFeedback(intent.sceneType);
       },
     });
   }

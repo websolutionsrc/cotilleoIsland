@@ -203,3 +203,53 @@ tests/             Vitest (lógica pura)
 ## Regla de acoplamiento
 La **lógica de simulación no depende de Phaser**. Phaser vive solo en `src/ui/` y
 `src/main.ts`. Así el core es testeable y portable (y la IA reemplazable por plantillas).
+
+## Pilot Runtime Prep - Mara
+- **[DONE] 2026-07-08** Mara pilot style anchor copied from
+  `docs/art/pilot/mara_pilot_v4.png` to runtime asset
+  `public/art/pilot/mara_pilot_v4.png`.
+- `src/ui/island-scene.ts` preloads the pilot sprite and renders it in the island scene
+  with the previous colored-circle avatar kept as a fallback if the texture is missing.
+- Scope is intentionally narrow: this is a visual scale/readability preview, not the
+  final modular paper-doll system, not F3.4 generic scene UI, and not mass production.
+- Next recommended task: **F3.4**, model **Codex/Sonnet**, reasoning **medium**, no
+  subagents unless screenshot review or asset QA becomes independent.
+
+## F3.4 Visual Experience Prep
+- **[DONE] 2026-07-08** Strong visual/UX rethink before F3.4 implementation.
+- Spec: `docs/ux_f3_4_visual_experience.md`.
+- Runtime shell changed from overlapping canvas + fixed panel to a two-column app shell:
+  Phaser play surface on the left, resident inspector/actions panel on the right, stacked
+  on narrow screens.
+- `IslandScene` now uses a wider 960x600 play surface, a warmer temporary resident
+  stage, shorter in-scene state text, and a first idle tween for Mara.
+- What remains for F3.4: generic scene bubble, `computeActiveScenes()` UI wiring,
+  `resolveScene()` UI wiring, and resolution tweens per scene type.
+
+## F3.4 - Generic Scene UI (DONE)
+- **[DONE] 2026-07-08**: closed the remaining F3.4 items above. Continued from a
+  partial Codex pass that hit its usage limit mid-edit; picked up, completed, and
+  validated end-to-end.
+- Fixed a leftover reference to the old `hungerBubbleText` field (renamed to
+  `sceneBubbleText` during the UX rework) that would have failed at runtime.
+- `IslandScene.showActiveScene(intent, text)`: shows/hides the generic scene bubble
+  above the resident, replacing the F2 hunger-only bubble. Text comes from
+  `sceneTextFor` over the real `SceneIntent`; label comes from the existing
+  `SCENE_ICONS` map (one label per `SceneType`).
+- `IslandScene.showResolutionFeedback(sceneType)`: one-shot tween per resolution
+  (hop for hungry/bored/lonely, slow settle for tired, playful tilt for quirk),
+  pausing/resuming the idle tween so they do not fight over the same properties.
+- `main.ts` wires `SaveSystem.computeActiveScenes()` / `resolveScene()` to both the
+  Phaser scene and the DOM panel (`resident-panel.ts`, already had `activeScene` /
+  `onResolveScene` support from the interrupted pass).
+- `vite.config.ts`: added `server.port` reading `process.env.PORT` so the preview
+  harness's autoPort assignment is actually honored (dev server was silently
+  defaulting to 5173 and ignoring the assigned port).
+- Validation: `npm run build` (tsc + vite) green, `npm test` 84/84 green, Phaser
+  coupling boundary clean, zero control-byte checks clean. Live preview: seeded a
+  resident to hunger=95 via the real `SaveSystem` (no test/mock shortcuts), reloaded,
+  confirmed the bubble showed "I could really use something to eat.", clicked the
+  real resolve button, confirmed hunger 95->50 and mood 70->76 via `applyFoodEffect`,
+  scene cleared afterward, zero console errors throughout.
+- Model used: Sonnet (mechanical completion + wiring of an already-designed system,
+  matches the project's own model-selection rubric in AGENTS.md).

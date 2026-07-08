@@ -3,21 +3,28 @@ import { PERSONALITY_KEYS, type Personality } from "@/core/personality";
 import { applyFoodEffect, needsToStatus } from "@/core/needs";
 import type { FoodItem } from "@/data/foods";
 import { foodReactionFor } from "@/dialogue/food-reactions";
+import type { SceneIntent, SceneResolutionAction } from "@/events";
 import { updateResident, ResidentValidationError } from "@/residents/factory";
 
 export interface ResidentPanelOptions {
   container: HTMLElement;
   resident: Resident;
   foods?: readonly FoodItem[];
+  activeScene?: SceneIntent | null;
+  activeSceneText?: string | null;
   /** Llamado con el residente ya validado, tras pulsar "Guardar". */
   onSave: (updated: Resident) => Promise<void> | void;
   /** Llamado con el residente actualizado tras darle comida. */
   onGiveFood?: (updated: Resident, food: FoodItem, reaction: string) => Promise<void> | void;
+  /** Called when the current F3 scene is resolved. */
+  onResolveScene?: (intent: SceneIntent, action: SceneResolutionAction) => Promise<void> | void;
 }
 
 export interface ResidentPanel {
   /** Sincroniza los campos del panel con un residente externo (p.ej. tras cargar). */
   setResident(resident: Resident): void;
+  /** Updates the active F3 scene shown in the panel. */
+  setActiveScene(intent: SceneIntent | null, text?: string | null): void;
 }
 
 const PERSONALITY_LABELS: Record<keyof Personality, string> = {
@@ -36,8 +43,10 @@ const PERSONALITY_LABELS: Record<keyof Personality, string> = {
  * solo construye el DOM y traduce eventos de input a llamadas de dominio.
  */
 export function mountResidentPanel(options: ResidentPanelOptions): ResidentPanel {
-  const { container, foods = [], onGiveFood, onSave } = options;
+  const { container, foods = [], onGiveFood, onResolveScene, onSave } = options;
   let current = options.resident;
+  let activeScene = options.activeScene ?? null;
+  let activeSceneText = options.activeSceneText ?? null;
 
   container.innerHTML = "";
   container.classList.add("resident-panel");
@@ -122,9 +131,66 @@ export function mountResidentPanel(options: ResidentPanelOptions): ResidentPanel
   giveFoodButton.disabled = foods.length === 0 || onGiveFood === undefined;
   container.appendChild(giveFoodButton);
 
+  const sceneTitle = document.createElement("h3");
+  sceneTitle.textContent = "Escena activa";
+  container.appendChild(sceneTitle);
+
+  const sceneBox = document.createElement("p");
+  sceneBox.className = "resident-panel__scene";
+  container.appendChild(sceneBox);
+
+  const resolveSceneButton = document.createElement("button");
+  resolveSceneButton.type = "button";
+  container.appendChild(resolveSceneButton);
+
   const reactionBox = document.createElement("p");
   reactionBox.className = "resident-panel__reaction";
   container.appendChild(reactionBox);
+
+  const ACTION_LABELS: Record<Exclude<SceneResolutionAction["kind"], "give_food">, string> = {
+    rest: "Dejar descansar",
+    play: "Jugar un rato",
+    chat: "Charlar",
+    observe: "Observar",
+  };
+
+  function actionForActiveScene(): SceneResolutionAction | null {
+    if (!activeScene) return null;
+    switch (activeScene.sceneType) {
+      case "hungry": {
+        const selectedFood = foods.find((food) => food.id === foodSelect.value);
+        return selectedFood ? { kind: "give_food", foodEffect: selectedFood } : null;
+      }
+      case "tired":
+        return { kind: "rest" };
+      case "bored":
+        return { kind: "play" };
+      case "lonely":
+        return { kind: "chat" };
+      case "quirk":
+        return { kind: "observe" };
+    }
+  }
+
+  function actionLabelForActiveScene(): string {
+    const action = actionForActiveScene();
+    if (!action) return "Resolver escena";
+    if (action.kind === "give_food") return "Dar comida";
+    return ACTION_LABELS[action.kind];
+  }
+
+  function syncScene(): void {
+    if (!activeScene) {
+      sceneBox.textContent = "No hay escenas activas ahora mismo.";
+      resolveSceneButton.textContent = "Sin escena";
+      resolveSceneButton.disabled = true;
+      return;
+    }
+
+    sceneBox.textContent = activeSceneText ?? "Mara quiere hacer algo.";
+    resolveSceneButton.textContent = actionLabelForActiveScene();
+    resolveSceneButton.disabled = onResolveScene === undefined || actionForActiveScene() === null;
+  }
 
   function syncInputs(resident: Resident): void {
     nameInput.value = resident.name;
@@ -142,6 +208,7 @@ export function mountResidentPanel(options: ResidentPanelOptions): ResidentPanel
     const moodLabel = status.lowMood ? "ánimo bajo" : "ánimo estable";
     needsSummary.textContent = `Hambre ${resident.needs.hunger}/100 (${hungerLabel}) · Ánimo ${resident.needs.mood}/100 (${moodLabel})`;
     errorBox.textContent = "";
+    syncScene();
   }
 
   saveButton.addEventListener("click", () => {
@@ -189,13 +256,28 @@ export function mountResidentPanel(options: ResidentPanelOptions): ResidentPanel
     void onGiveFood(updated, selectedFood, reaction);
   });
 
+  foodSelect.addEventListener("change", syncScene);
+
+  resolveSceneButton.addEventListener("click", () => {
+    if (!activeScene || !onResolveScene) return;
+    const action = actionForActiveScene();
+    if (!action) return;
+    void onResolveScene(activeScene, action);
+  });
+
   syncInputs(current);
+  syncScene();
 
   return {
     setResident(resident: Resident) {
       current = resident;
       syncInputs(resident);
       reactionBox.textContent = "";
+    },
+    setActiveScene(intent: SceneIntent | null, text?: string | null) {
+      activeScene = intent;
+      activeSceneText = text ?? null;
+      syncScene();
     },
   };
 }

@@ -6,6 +6,11 @@ export default defineConfig({
   resolve: {
     alias: { "@": "/src" },
   },
+  server: {
+    // Respeta el puerto asignado por el harness de preview (autoPort) cuando
+    // 5173 esté ocupado; sin PORT en el entorno, cae al 5173 de siempre.
+    port: process.env.PORT ? Number(process.env.PORT) : 5173,
+  },
   plugins: [
     VitePWA({
       registerType: "autoUpdate",

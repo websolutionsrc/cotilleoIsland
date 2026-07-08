@@ -1,5 +1,14 @@
 # Pilot character kit - "Mara" (F2.6 pilot gate)
 
+## Runtime preview status
+- **[DONE] 2026-07-08** `mara_pilot_v4.png` is the approved pilot style anchor for
+  a first runtime preview.
+- Runtime copy: `public/art/pilot/mara_pilot_v4.png`.
+- Integration: `src/ui/island-scene.ts` preloads this PNG and renders it as the visible
+  resident sprite, with the old colored-circle avatar kept as fallback.
+- This closes only the preview gate. The paper-doll base body, layer proof, expression
+  sheets and mass batches remain separate follow-up work.
+
 > Purpose: generate ONE complete character with the art library rules to validate the
 > style before any mass batch. Designed by Fable 5; the user generates the images with
 > an external image model and acts as taste gate; Sonnet/Codex integrate afterwards.

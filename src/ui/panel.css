@@ -1,108 +1,201 @@
-/* Overlay DOM sobre el canvas de Phaser, panel de edición del residente (Fase 1). */
+:root {
+  color: #f6efe4;
+  background: #184f45;
+  font-family:
+    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  width: 100%;
+  min-width: 320px;
+  min-height: 100%;
+  margin: 0;
+}
+
+body {
+  min-height: 100vh;
+  overflow: hidden;
+  background:
+    linear-gradient(180deg, rgba(255, 239, 204, 0.08), rgba(20, 78, 67, 0.08)),
+    #1f745f;
+}
+
+button,
+input,
+select {
+  font: inherit;
+}
+
+#app-shell {
+  width: 100vw;
+  height: 100vh;
+  padding: 16px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 16px;
+}
+
+#game-shell {
+  min-width: 0;
+  min-height: 0;
+  border: 1px solid rgba(255, 246, 222, 0.32);
+  border-radius: 8px;
+  overflow: hidden;
+  background: #206f5e;
+  box-shadow: 0 18px 42px rgba(24, 31, 26, 0.28);
+}
+
+#game {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#game canvas {
+  display: block;
+}
 
 #ui-panel {
-  position: fixed;
-  top: 16px;
-  right: 16px;
-  width: 280px;
-  max-width: calc(100vw - 32px);
+  min-width: 0;
+  max-height: calc(100vh - 32px);
   padding: 16px;
-  border-radius: 12px;
-  background: rgba(15, 23, 32, 0.85);
-  color: #f2f2f2;
-  font-family: sans-serif;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  overflow: auto;
+  border: 1px solid rgba(255, 246, 222, 0.2);
+  border-radius: 8px;
+  background: rgba(17, 34, 35, 0.94);
+  color: #f6efe4;
+  box-shadow: 0 18px 42px rgba(10, 21, 24, 0.36);
 }
 
 #ui-panel h2 {
   margin: 0 0 12px;
   font-size: 18px;
+  line-height: 1.2;
 }
 
 #ui-panel h3 {
-  margin: 14px 0 6px;
-  font-size: 15px;
+  margin: 18px 0 8px;
+  font-size: 14px;
+  line-height: 1.2;
+  color: #f1d9a8;
 }
 
 #ui-panel label {
   display: block;
-  font-size: 13px;
-  margin-top: 8px;
-  opacity: 0.85;
+  margin-top: 10px;
+  color: rgba(246, 239, 228, 0.82);
+  font-size: 12px;
+  font-weight: 650;
 }
 
 #ui-panel input[type="text"],
 #ui-panel select {
   width: 100%;
-  box-sizing: border-box;
-  padding: 6px 8px;
-  margin-top: 4px;
+  min-height: 34px;
+  margin-top: 6px;
+  padding: 7px 9px;
+  border: 1px solid rgba(246, 239, 228, 0.18);
   border-radius: 6px;
-  border: 1px solid #3a4a55;
-  background: #0f1720;
-  color: #f2f2f2;
+  background: #102127;
+  color: #f6efe4;
+}
+
+#ui-panel input[type="text"]:focus,
+#ui-panel select:focus,
+#ui-panel input[type="range"]:focus-visible,
+#ui-panel button:focus-visible {
+  outline: 2px solid #f1c36d;
+  outline-offset: 2px;
 }
 
 .resident-panel__row {
-  display: flex;
+  display: grid;
+  grid-template-columns: 92px minmax(0, 1fr) 30px;
   align-items: center;
   gap: 8px;
-  margin-top: 8px;
+  margin-top: 10px;
 }
 
 .resident-panel__row label {
-  flex: 0 0 100px;
   margin-top: 0;
 }
 
 .resident-panel__row input[type="range"] {
-  flex: 1 1 auto;
+  width: 100%;
+  min-width: 0;
+  accent-color: #2f9e7f;
 }
 
 .resident-panel__value {
-  flex: 0 0 28px;
+  color: #fff7df;
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
 
 .resident-panel__error {
   min-height: 1.2em;
-  color: #ff8a8a;
+  margin: 10px 0 0;
+  color: #ff9b8f;
   font-size: 13px;
 }
 
 .resident-panel__needs {
-  margin: 0 0 8px;
-  color: #f8f1d8;
+  margin: 0 0 10px;
+  color: #fff3c4;
   font-size: 13px;
   line-height: 1.35;
 }
 
 .resident-panel__reaction {
   min-height: 2.4em;
-  margin: 10px 0 0;
-  color: #d6f5e9;
+  margin: 12px 0 0;
+  color: #c7f2df;
   font-size: 13px;
   line-height: 1.35;
 }
 
 #ui-panel button {
   width: 100%;
-  margin-top: 8px;
-  padding: 8px;
-  border: none;
+  min-height: 36px;
+  margin-top: 10px;
+  padding: 8px 10px;
+  border: 0;
   border-radius: 6px;
-  background: #1f6f5c;
-  color: white;
-  font-weight: 600;
+  background: #268469;
+  color: #ffffff;
+  font-weight: 750;
   cursor: pointer;
 }
 
 #ui-panel button:hover {
-  background: #268069;
+  background: #2d9879;
 }
 
 #ui-panel button:disabled {
   cursor: not-allowed;
-  opacity: 0.5;
+  opacity: 0.52;
+}
+
+@media (max-width: 860px) {
+  body {
+    overflow: auto;
+  }
+
+  #app-shell {
+    height: auto;
+    min-height: 100vh;
+    grid-template-columns: 1fr;
+    grid-template-rows: minmax(360px, 58vh) auto;
+  }
+
+  #ui-panel {
+    max-height: none;
+  }
 }

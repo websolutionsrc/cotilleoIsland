@@ -2,6 +2,27 @@
 
 Formato: entradas por fase/hito. Fechas en `YYYY-MM-DD`.
 
+## [F3.4] - 2026-07-08
+
+### Added
+- Generic F3 scene UI: `IslandScene.showActiveScene`/`showResolutionFeedback` and
+  `main.ts` wiring of `computeActiveScenes()`/`resolveScene()` to Phaser scene + DOM
+  panel. Replaces the F2 ad-hoc hunger-only bubble.
+- `vite.config.ts` now reads `PORT` from the environment so the local preview
+  harness's autoPort assignment is actually respected by the dev server.
+
+### Fixed
+- Completed a Codex pass left mid-edit (hit its usage limit): a leftover reference
+  to the removed `hungerBubbleText` field would have thrown at runtime.
+
+### Validation
+- `npm run build` and `npm test` (84/84) green; Phaser stays confined to `src/ui/`
+  and `main.ts`; no control-byte artifacts in changed files.
+- Live preview end-to-end: seeded hunger=95 through the real `SaveSystem`, confirmed
+  the scene bubble and panel text, resolved via the real "Dar comida" button,
+  confirmed needs updated (hunger 95->50, mood 70->76) and the scene cleared. Zero
+  console errors.
+
 ## [F2.6 - visual direction] - 2026-07-07
 
 ### Added (design only; no gameplay code)
