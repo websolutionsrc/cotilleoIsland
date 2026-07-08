@@ -9,7 +9,8 @@
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "defringe": "node tools/defringe/defringe.mjs"
   },
   "dependencies": {
     "localforage": "^1.10.0",
