@@ -113,6 +113,23 @@ sparkle star, warm question mark, flat warm palette, transparent background, no 
   without alpha (fake transparency). Confirms the general rule: GPT image outputs do not
   carry a real alpha channel - a cutout step is mandatory (ADR 0007), not a prompt fix.
 
+- `mara_pilot_v3.png` (dressed in Outfit A, still RGB no alpha): raw reference of the
+  Outfit A look; not a base body.
+- **`mara_pilot_v4.png` (2026-07-07): MILESTONE.** First asset with TRUE alpha (RGBA,
+  ~84% transparent, clean corners) - the cutout pipeline works. Style/Direction B
+  APPROVED as the official style anchor: compact chibi, warm outline + storybook
+  shading, S6 skin, auburn curly hair, amber glossy eyes, forearm tattoo, clean hair
+  and finger edges. **Caveat**: she is DRESSED (mustard tee + teal shorts + belt +
+  sneakers) = this is the Outfit A full-look, NOT the neutral base body needed as the
+  paper-doll template. Use v4 as: style anchor + proof-of-cutout + Outfit A reference.
+  Still missing: the neutral base body (gray tank+shorts) cut the same way.
+
+### Registration measurements (from mara_pilot_v4, canvas 1254x1254)
+Figure bbox 533x815 px, x[352-885] y[229-1044], centered X~619 (canvas center 627),
+feet baseline y=1044, top margin 229. The neutral base body should be generated on the
+SAME canvas/pose so these anchors carry over; final pixel anchors (head-center, hand
+sockets, chest) get locked once the clean neutral base exists.
+
 ## Production method (paper-doll) - ADR 0007
 Scope chosen: full modular paper-doll. Layers are produced by **edit-on-template + mask**,
 recolored by code tint. Next steps before any volume:
