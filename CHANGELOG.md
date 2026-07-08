@@ -2,6 +2,32 @@
 
 Formato: entradas por fase/hito. Fechas en `YYYY-MM-DD`.
 
+## [F4.1] - 2026-07-08
+
+### Added
+- `src/relationships/` pure core (no save/UI, no Phaser): `types.ts`
+  (`Relationship`, `RelationshipStatus`), `key.ts` (ordered-pair normalization,
+  `getRelationship` default-on-miss, `upsertRelationship`), `chemistry.ts`
+  (pure romance-compatibility projection, never persisted), `status.ts`
+  (explicit status state machine with guards, driven only by resolved
+  actions), `decay.ts` (friendship/tension passive decay with grace period),
+  `apply.ts` (`applyRelationshipAction`, single entry point tying deltas +
+  chemistry + status transition together).
+- Tests (`tests/relationships.test.ts`, 27): covers key normalization,
+  chemistry direction/clamping, every status transition and guard, decay
+  grace period, and end-to-end action application.
+
+### Validation
+- `npm run build` and `npm test` (111/111) green. Phaser coupling boundary
+  clean, zero control-byte artifacts.
+
+### Notes
+- Tagged `v01.00.F3` (Event Engine complete) before branching
+  `develop/f4-relationships` off it.
+- F4.2 (persistence), F4.3 (social scenes), F4.4 (UI) remain. F4.4 raises an
+  open question: the game only ever shows one resident today, so social
+  scenes cannot trigger live without a second resident - see CODEMAP.
+
 ## [F3.4] - 2026-07-08
 
 ### Added

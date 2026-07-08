@@ -30,7 +30,7 @@ Mapa de módulos previstos. Se rellena a medida que se implementan (Fase 1: sist
 |---|---|---|---|
 | **Core** | `src/core/` | Tipos base: `Resident`, `Personality`, `Needs`, `Avatar`, ids tipados (`ResidentId`); proyecciones puras de personalidad (`personality-derived.ts`); lógica pura de necesidades (`needs.ts`) | **Fase 2.1: core de necesidades implementado** (sin UI ni persistencia de F2 aún) |
 | **Residents** | `src/residents/` | `createResident`/`updateResident` (defaults + validación pura de nombre y personalidad) | **Fase 1: implementado** (sin inventario/nivel aún) |
-| **Relationships** | `src/relationships/` | `Relationship` persistida (par `a<b`, friendship/tension/romance/`status`), `chemistry` pura, detectores sociales | **pendiente F4 — diseño cerrado** (`engine_design_f3-f5.md` §3) |
+| **Relationships** | `src/relationships/` | `types/key/chemistry/status/decay/apply` — core puro: par normalizado `a<b`, `chemistry` (proyección pura), máquina de estados con guardas, decaimiento, `applyRelationshipAction` (deltas+status en un punto) | **F4.1 done** (27 tests); F4.2 (persistencia)/F4.3 (escenas sociales)/F4.4 (UI) pendientes — diseño cerrado en `engine_design_f3-f5.md` §3 |
 | **Events** | `src/events/` | `types/rng/detectors/cooldowns/select/resolve` — pipeline puro detect→cooldown→score→select, `SceneIntent` efímera, `sceneLog` cap 20 | **F3.1-F3.3 implemented; F3.4 UI pending** |
 | **Dialogue** | `src/dialogue/` | V1: plantillas (`food-reactions.ts` ahora; `scene-texts.ts` en F3.3); V2: IA (`DialogueGenerator`) | **F3.3 scene text templates implemented** |
 | **AI** (opcional) | `src/ai/` | DialogueEnhancer, DailyNarrator, MemorySummarizer, CatchphraseGenerator, EventSuggestor validado | pendiente |
@@ -38,6 +38,52 @@ Mapa de módulos previstos. Se rellena a medida que se implementan (Fase 1: sist
 | **UI** | `src/ui/` | `IslandScene` (Phaser, placeholder de residente "en su casa") + `resident-panel` (overlay DOM: crear/editar nombre, personalidad, dar comida y mostrar reacción) | **Fase 2.5: vertical de hambre/comida implementado** |
 | **Data** | `src/data/` | Catálogo de comidas (`foods.json`) + validación/exports (`foods.ts`), quirks (`quirks.ts`); después residentes mock, eventos y plantillas | **F3.3 quirks implemented** |
 | **Visual direction** | `docs/art_library.md` + `docs/art/references/` + future `public/art/` | 2D art library: characters, outfits, environments, scene language, asset export rules and delegation guidelines so other models can produce visual work without touching the core | **F2.6 art library DONE (ADR 0006, Direction B "Storybook with volume"); pilot asset pass pending before mass batches** |
+
+## Fase 4 - Relationships (F4.1 done; F4.2-F4.4 pending)
+Design in `docs/engine_design_f3-f5.md` section 3. Branch `develop/f4-relationships`
+(from `v01.00.F3`). Subfases (mirroring F3's pattern):
+
+| Subfase | Content | Status |
+|---|---|---|
+| F4.1 | Pure core: types, key normalization, chemistry, status machine, decay, applyRelationshipAction | **DONE** |
+| F4.2 | SaveState v5 (`relationships[]`) + migration v4->v5 + SaveSystem wiring | pending |
+| F4.3 | Social scene types (meet/chat/argument/reconcile/flirt/confess/propose) + detectors + scene texts + resolution effects on both participants | pending |
+| F4.4 | UI - scope open, see note below | pending |
+
+- `src/relationships/types.ts`: `Relationship` (persisted fields: a/b ordered pair,
+  friendship/tension/romance, status, lastInteractionAtMs), `RelationshipStatus` union.
+- `src/relationships/key.ts`: `orderedPair`, `makeDefaultRelationship` (strangers,
+  never persisted until a real interaction happens), `findRelationship`/
+  `getRelationship` (default-on-miss), `upsertRelationship` (pure).
+- `src/relationships/chemistry.ts`: `chemistry(a, b, relationship)` - pure projection
+  (romanticism average + weirdness/sociability compatibility + kindness average, minus
+  a tension penalty), never persisted, per engine_design_f3-f5.md section 0/3.3.
+- `src/relationships/status.ts`: `nextRelationshipStatus` - explicit state machine,
+  status only changes via a resolved action (meet/chat/argument/reconcile/confess/
+  propose; flirt never changes status, only nudges romance). Implementation decision
+  not fully pinned by the design doc: `reconcile` always lands on friends/besties by
+  current friendship, regardless of whether the fight came from a friend or a couple
+  (romance/friendship values are preserved, so a quick re-confess is possible).
+- `src/relationships/decay.ts`: `decayRelationship` - friendship decays 1/day after a
+  3-day grace period; tension decays 2/day with no grace; romance/status never decay
+  passively (only change via resolved actions).
+- `src/relationships/apply.ts`: `applyRelationshipAction` - single entry point used by
+  F4.3's scene resolver: applies the fixed delta table, recomputes chemistry with the
+  post-delta values, and resolves the status transition guards against those values.
+- Tests (`tests/relationships.test.ts`, 27): key normalization, chemistry formula
+  behavior (romance/compatibility/tension direction and clamping), every status
+  transition and its guards, decay grace period and clamping, and
+  `applyRelationshipAction` end-to-end (including a confess crossing its guard exactly
+  at the threshold, and an argument on a couple that does not erase romance).
+
+### Open question for F4.4 (UI)
+The game currently only ever shows/edits a single resident (`main.ts` uses
+`residents[0]`). None of F4's social scenes (`meet`, `chat`, `argument`, ...) can ever
+trigger in the real UI without a second resident existing. F4.4 will need at least a
+minimal way to create/select a second resident - kept as small as possible (not a full
+resident-management screen) - unless validation continues to rely on seeding a second
+resident through the real `SaveSystem` via the preview tool (as was done for F3.4's
+hungry-scene check), deferring UI resident management to later. Decision pending.
 
 ## Fase 1.2 — personalidad: sliders → tags/categoría/expresión
 - `src/core/personality-derived.ts`: proyecciones puras y deterministas de los 6 sliders
