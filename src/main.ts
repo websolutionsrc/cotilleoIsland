@@ -16,8 +16,8 @@ async function bootstrap(): Promise<void> {
   const storage = new IndexedDbStorage();
   const saveSystem = new SaveSystem(storage);
 
-  // Al abrir la isla se aplica decaimiento de necesidades antes de renderizar.
-  await saveSystem.applyNeedsDecay();
+  // Al abrir la isla se aplica decaimiento de necesidades y relaciones (F4) antes de renderizar.
+  await saveSystem.applyWorldDecay();
 
   // Si hay un residente guardado, se carga; si no, se crea uno por defecto.
   const residents = await saveSystem.listResidents();

@@ -46,7 +46,7 @@ Design in `docs/engine_design_f3-f5.md` section 3. Branch `develop/f4-relationsh
 | Subfase | Content | Status |
 |---|---|---|
 | F4.1 | Pure core: types, key normalization, chemistry, status machine, decay, applyRelationshipAction | **DONE** |
-| F4.2 | SaveState v5 (`relationships[]`) + migration v4->v5 + SaveSystem wiring | pending |
+| F4.2 | SaveState v5 (`relationships[]`) + migration v4->v5 + SaveSystem wiring | **DONE** |
 | F4.3 | Social scene types (meet/chat/argument/reconcile/flirt/confess/propose) + detectors + scene texts + resolution effects on both participants | pending |
 | F4.4 | UI - scope open, see note below | pending |
 
@@ -76,14 +76,42 @@ Design in `docs/engine_design_f3-f5.md` section 3. Branch `develop/f4-relationsh
   `applyRelationshipAction` end-to-end (including a confess crossing its guard exactly
   at the threshold, and an argument on a couple that does not erase romance).
 
-### Open question for F4.4 (UI)
+## Fase 4.2 - persistence
+- `SaveState` schema bumped to **5**: adds `relationships: Relationship[]`. Migration
+  v4->v5 seeds `[]` for old saves (a missing relationship already means "strangers" -
+  nothing real to reconstruct for pairs that never interacted). `removeResident` now
+  also drops any relationship involving the removed id (same pattern as `sceneLog`).
+- `SaveSystem.applyNeedsDecay` **renamed to `applyWorldDecay`** (clean rename, no
+  back-compat shim - all call sites are internal): now decays both needs AND
+  relationships from the same shared world-tick (`needsUpdatedAtMs`). Updated
+  `main.ts` and `tests/save-system.test.ts` accordingly.
+- `SaveSystem.getRelationshipBetween(x, y)`: read-only, default-on-miss.
+- `SaveSystem.resolveRelationshipAction(aId, bId, action, nowMs)`: single entry point
+  that loads both residents, calls `applyRelationshipAction`, and persists in one
+  write. Decoupled from the `SceneIntent`/`resolveScene` pipeline for now - F4.3 will
+  wire it in once social `sceneType`s exist; usable standalone in the meantime (used
+  by tests and by manual/preview validation).
+- Design refinement during implementation (not fully pinned by the original doc):
+  `decayRelationship`'s grace period had to become a **boolean gate on absolute time
+  since `lastInteractionAtMs`** (via a `nowMs` parameter), not a subtraction of grace
+  days from the incremental `elapsedMs` tick - otherwise repeated small decay ticks
+  (the realistic calling pattern, once per app open) would never accumulate the
+  "3 days of silence" the design intended. Tick-boundary approximation documented in
+  `src/relationships/decay.ts` (same coarseness `decayNeeds` already accepts).
+- Tests: 1 new in `tests/relationships.test.ts` (idempotent successive ticks) + 1 new
+  in `tests/save-system.test.ts` (`applyWorldDecay` decays a seeded relationship).
+  113 tests total, project-wide.
+- Validated end-to-end in the browser preview against the real `SaveSystem`
+  (IndexedDB): default relationship is "strangers", `resolveRelationshipAction(...,
+  "meet", ...)` promotes to "acquaintances" with friendship=5 and a real
+  `lastInteractionAtMs`, `schemaVersion` reads back as 5. Zero console errors.
+
+### F4.4 scope decision (resolved 2026-07-08)
 The game currently only ever shows/edits a single resident (`main.ts` uses
-`residents[0]`). None of F4's social scenes (`meet`, `chat`, `argument`, ...) can ever
-trigger in the real UI without a second resident existing. F4.4 will need at least a
-minimal way to create/select a second resident - kept as small as possible (not a full
-resident-management screen) - unless validation continues to rely on seeding a second
-resident through the real `SaveSystem` via the preview tool (as was done for F3.4's
-hungry-scene check), deferring UI resident management to later. Decision pending.
+`residents[0]`). Decision: F4.4 adds a **minimal** create-resident + select-resident
+UI (a button + a simple switcher), not a full resident-management screen. This is the
+smallest addition that lets F4's social scenes actually trigger and be observed live
+in the preview, rather than only through seeded `SaveSystem` calls.
 
 ## Fase 1.2 — personalidad: sliders → tags/categoría/expresión
 - `src/core/personality-derived.ts`: proyecciones puras y deterministas de los 6 sliders

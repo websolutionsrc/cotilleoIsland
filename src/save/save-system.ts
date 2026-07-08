@@ -11,6 +11,14 @@ import {
   type SceneResolutionAction,
 } from "@/events";
 import { SCENE_LOG_CAP } from "@/events/types";
+import {
+  applyRelationshipAction,
+  decayRelationship,
+  getRelationship,
+  upsertRelationship,
+  type Relationship,
+  type RelationshipAction,
+} from "@/relationships";
 import type { StoragePort } from "./storage-port";
 import {
   createEmptySaveState,
@@ -64,10 +72,12 @@ export class SaveSystem {
   }
 
   /**
-   * Aplica el decaimiento temporal de necesidades y persiste el resultado.
-   * Diseñado para llamarse al abrir/cargar la isla, antes de renderizar UI.
+   * Aplica el decaimiento temporal de necesidades y de relaciones (F4), y
+   * persiste el resultado. Diseñado para llamarse al abrir/cargar la isla,
+   * antes de renderizar UI. Sustituye a `applyNeedsDecay` (F2/F3): ambos
+   * decaimientos comparten el mismo tick de mundo (`needsUpdatedAtMs`).
    */
-  async applyNeedsDecay(nowMs = this.nowMs()): Promise<SaveState> {
+  async applyWorldDecay(nowMs = this.nowMs()): Promise<SaveState> {
     const state = await this.loadState();
     if (state.residents.length === 0) return state;
 
@@ -86,6 +96,9 @@ export class SaveSystem {
         ...resident,
         needs: decayNeeds(resident.needs, elapsedMs),
       })),
+      relationships: state.relationships.map((relationship) =>
+        decayRelationship(relationship, elapsedMs, nowMs),
+      ),
       needsUpdatedAtMs: nowMs,
     };
     await this.persistState(next);
@@ -110,6 +123,48 @@ export class SaveSystem {
       residents,
       activeResidentId: state.activeResidentId === id ? null : state.activeResidentId,
       sceneLog: state.sceneLog.filter((entry) => !entry.participants.includes(id)),
+      relationships: state.relationships.filter((relationship) => relationship.a !== id && relationship.b !== id),
+    };
+    await this.persistState(next);
+    return next;
+  }
+
+  /** Relacion entre dos residentes, o la relacion por defecto ("strangers") si nunca interactuaron. */
+  async getRelationshipBetween(x: ResidentId, y: ResidentId): Promise<Relationship> {
+    const state = await this.loadState();
+    return getRelationship(state.relationships, x, y);
+  }
+
+  /**
+   * Aplica una accion social (F4) sobre la relacion entre dos residentes y
+   * persiste el resultado en una sola escritura. Independiente del pipeline
+   * de `SceneIntent`/`resolveScene` (que F4.3 conectara aqui cuando existan
+   * los `sceneType` sociales); usable ya para tests/depuracion o UI directa.
+   */
+  async resolveRelationshipAction(
+    residentAId: ResidentId,
+    residentBId: ResidentId,
+    action: RelationshipAction,
+    nowMs = this.nowMs(),
+  ): Promise<SaveState> {
+    const state = await this.loadState();
+    const residentA = state.residents.find((candidate) => candidate.id === residentAId);
+    const residentB = state.residents.find((candidate) => candidate.id === residentBId);
+    if (!residentA || !residentB) {
+      throw new Error("Cannot resolve relationship action for missing resident(s)");
+    }
+
+    const current = getRelationship(state.relationships, residentAId, residentBId);
+    const updated = applyRelationshipAction(
+      current,
+      action,
+      { a: residentA.personality, b: residentB.personality },
+      nowMs,
+    );
+
+    const next: SaveState = {
+      ...state,
+      relationships: upsertRelationship(state.relationships, updated),
     };
     await this.persistState(next);
     return next;

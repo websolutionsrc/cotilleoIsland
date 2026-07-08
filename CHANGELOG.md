@@ -2,6 +2,33 @@
 
 Formato: entradas por fase/hito. Fechas en `YYYY-MM-DD`.
 
+## [F4.2] - 2026-07-08
+
+### Added
+- `SaveState` schema v5: `relationships: Relationship[]`, migration v4->v5
+  (seeds `[]`), `removeResident` now also drops relationships involving the
+  removed id.
+- `SaveSystem.getRelationshipBetween(x, y)` and
+  `SaveSystem.resolveRelationshipAction(aId, bId, action, nowMs)` - decoupled
+  from the scene-engine pipeline for now, F4.3 will wire it in.
+
+### Changed
+- `SaveSystem.applyNeedsDecay` renamed to `applyWorldDecay` (clean rename, no
+  shim): now decays needs and relationships from the same world-tick. Updated
+  `main.ts` and tests.
+- `decayRelationship` signature gained a `nowMs` parameter: the grace period
+  is a boolean gate on absolute time since `lastInteractionAtMs`, not a
+  subtraction from the incremental tick - fixes a real idempotency bug found
+  while wiring persistence (repeated small ticks would never have
+  accumulated 3 days of silence otherwise).
+
+### Validation
+- `npm run build` and `npm test` (113/113) green. Phaser coupling boundary
+  clean, zero control-byte artifacts. Live preview end-to-end: seeded a
+  second resident through the real SaveSystem/IndexedDB, resolved a "meet"
+  action, confirmed status "strangers" -> "acquaintances", friendship=5,
+  schemaVersion=5. Zero console errors.
+
 ## [F4.1] - 2026-07-08
 
 ### Added

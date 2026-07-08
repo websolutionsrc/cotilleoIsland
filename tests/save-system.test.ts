@@ -6,6 +6,7 @@ import { createResident } from "@/residents/factory";
 import { DEFAULT_PERSONALITY } from "@/core/personality";
 import { DEFAULT_NEEDS } from "@/core/needs";
 import type { SceneLogEntry } from "@/events";
+import { orderedPair } from "@/relationships";
 
 class CountingStorage extends InMemoryStorage {
   setCalls = 0;
@@ -34,6 +35,7 @@ describe("SaveSystem con InMemoryStorage", () => {
       needsUpdatedAtMs: null,
       sceneLog: [],
       stats: { scenesResolved: 0 },
+      relationships: [],
     });
   });
 
@@ -86,13 +88,13 @@ describe("SaveSystem con InMemoryStorage", () => {
     expect(state.needsUpdatedAtMs).toBe(1234);
   });
 
-  it("applyNeedsDecay decae necesidades y persiste la nueva marca temporal", async () => {
+  it("applyWorldDecay decae necesidades y persiste la nueva marca temporal", async () => {
     const storage = new InMemoryStorage();
     const saveSystem = new SaveSystem(storage, () => 0);
     const resident = createResident({ name: "Lina", needs: { hunger: 20, mood: 70 } });
     await saveSystem.saveResident(resident);
 
-    const next = await saveSystem.applyNeedsDecay(60 * 60 * 1000);
+    const next = await saveSystem.applyWorldDecay(60 * 60 * 1000);
     const decayed = next.residents[0];
 
     expect(next.needsUpdatedAtMs).toBe(60 * 60 * 1000);
@@ -101,7 +103,7 @@ describe("SaveSystem con InMemoryStorage", () => {
     await expect(saveSystem.loadState()).resolves.toEqual(next);
   });
 
-  it("applyNeedsDecay solo siembra timestamp si el guardado no tenía marca temporal", async () => {
+  it("applyWorldDecay solo siembra timestamp si el guardado no tenía marca temporal", async () => {
     const resident = createResident({ name: "Nico" });
     await storage.set(SAVE_STATE_KEY, {
       schemaVersion: 3,
@@ -112,10 +114,38 @@ describe("SaveSystem con InMemoryStorage", () => {
       stats: { scenesResolved: 0 },
     });
 
-    const next = await saveSystem.applyNeedsDecay(5000);
+    const next = await saveSystem.applyWorldDecay(5000);
 
     expect(next.needsUpdatedAtMs).toBe(5000);
     expect(next.residents[0]).toEqual(resident);
+  });
+
+  it("applyWorldDecay tambien decae relaciones existentes", async () => {
+    const storage = new InMemoryStorage();
+    const saveSystem = new SaveSystem(storage, () => 0);
+    const a = createResident({ name: "Lina" });
+    const b = createResident({ name: "Nico" });
+    const [first, second] = orderedPair(a.id, b.id);
+
+    await storage.set(SAVE_STATE_KEY, {
+      schemaVersion: CURRENT_SCHEMA_VERSION,
+      residents: [a, b],
+      activeResidentId: a.id,
+      needsUpdatedAtMs: 0,
+      sceneLog: [],
+      stats: { scenesResolved: 0 },
+      relationships: [
+        { a: first, b: second, friendship: 50, tension: 20, romance: 0, status: "friends", lastInteractionAtMs: 0 },
+      ],
+    });
+
+    const fiveDaysMs = 5 * 24 * 60 * 60 * 1000;
+    const next = await saveSystem.applyWorldDecay(fiveDaysMs);
+    const relationship = next.relationships[0];
+
+    expect(relationship?.friendship).toBe(50 - 5); // past 3-day grace: 5 elapsed days * 1/day
+    expect(relationship?.tension).toBe(20 - 10); // no grace: 5 elapsed days * 2/day
+    expect(relationship?.status).toBe("friends"); // decay never touches status
   });
 
   it("removeResident lo quita de la lista y limpia activeResidentId si era el activo", async () => {
@@ -151,6 +181,7 @@ describe("migrateSaveState (migraciones incrementales)", () => {
       needsUpdatedAtMs: 123,
       sceneLog: [],
       stats: { scenesResolved: 0 },
+      relationships: [],
     };
 
     expect(migrateSaveState(state)).toEqual(state);

@@ -202,33 +202,47 @@ describe("nextRelationshipStatus", () => {
 });
 
 describe("decayRelationship", () => {
+  const ONE_DAY_MS = 24 * 60 * 60 * 1000;
+
   it("is a no-op with no elapsed time or no prior interaction", () => {
     const rel = relationship({ friendship: 50, tension: 50, lastInteractionAtMs: 0 });
-    expect(decayRelationship(rel, 0)).toEqual(rel);
-    expect(decayRelationship({ ...rel, lastInteractionAtMs: null }, 999_999_999)).toEqual({
+    expect(decayRelationship(rel, 0, 0)).toEqual(rel);
+    expect(decayRelationship({ ...rel, lastInteractionAtMs: null }, 999_999_999, 999_999_999)).toEqual({
       ...rel,
       lastInteractionAtMs: null,
     });
   });
 
-  it("does not decay friendship within the grace period", () => {
+  it("does not decay friendship within the grace period (gate is absolute time since interaction)", () => {
     const rel = relationship({ friendship: 50, lastInteractionAtMs: 0 });
-    const oneDayMs = 24 * 60 * 60 * 1000;
-    expect(decayRelationship(rel, oneDayMs).friendship).toBe(50);
+    // nowMs still inside the 3-day grace window since lastInteractionAtMs.
+    expect(decayRelationship(rel, ONE_DAY_MS, ONE_DAY_MS).friendship).toBe(50);
   });
 
-  it("decays friendship by 1/day past the grace period, and tension by 2/day with no grace", () => {
+  it("tension always decays (no grace), friendship decays the full tick once past grace", () => {
     const rel = relationship({ friendship: 50, tension: 50, lastInteractionAtMs: 0 });
-    const fiveDaysMs = 5 * 24 * 60 * 60 * 1000;
-    const decayed = decayRelationship(rel, fiveDaysMs);
-    expect(decayed.friendship).toBe(50 - 2); // 5 days - 3 grace days = 2 decaying days
-    expect(decayed.tension).toBe(50 - 10); // 5 days * 2/day, no grace
+    const fiveDaysMs = 5 * ONE_DAY_MS;
+    // Single tick spanning the whole 5 days since interaction: past grace (>=3 days),
+    // so friendship decays for the FULL elapsed tick (approximate by design - see decay.ts).
+    const decayed = decayRelationship(rel, fiveDaysMs, fiveDaysMs);
+    expect(decayed.friendship).toBe(50 - 5); // 5 elapsed days * 1/day
+    expect(decayed.tension).toBe(50 - 10); // 5 elapsed days * 2/day, no grace
+  });
+
+  it("does not double-decay across successive small ticks (idempotent tick model)", () => {
+    let rel = relationship({ friendship: 50, lastInteractionAtMs: 0 });
+    // Advance past grace first (day 0 -> day 4, still within grace at day 3 boundary
+    // handled by the tick below), then apply two 1-day ticks past the grace boundary.
+    rel = decayRelationship(rel, 4 * ONE_DAY_MS, 4 * ONE_DAY_MS); // past grace: decays 4 days worth
+    const afterFirstTick = rel.friendship;
+    rel = decayRelationship(rel, ONE_DAY_MS, 5 * ONE_DAY_MS); // one more day, from day 4 to day 5
+    expect(rel.friendship).toBe(afterFirstTick - 1);
   });
 
   it("clamps at the relationship minimum", () => {
     const rel = relationship({ friendship: 1, tension: 1, lastInteractionAtMs: 0 });
-    const farFuture = 100 * 24 * 60 * 60 * 1000;
-    const decayed = decayRelationship(rel, farFuture);
+    const farFuture = 100 * ONE_DAY_MS;
+    const decayed = decayRelationship(rel, farFuture, farFuture);
     expect(decayed.friendship).toBe(0);
     expect(decayed.tension).toBe(0);
   });
