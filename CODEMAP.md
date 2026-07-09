@@ -213,7 +213,7 @@ seeded `SaveSystem` calls.
   scene box correctly cleared afterward. Zero console errors throughout.
 - **F4 (Relationships) is now fully closed: F4.1-F4.4 all DONE.**
 
-## Fase 5 - Isla/progreso (F5.1 done)
+## Fase 5 - Isla/progreso (F5.1-F5.2 done)
 Design in `docs/engine_design_f3-f5.md` section 4. Branch `develop/f5-island-progress`
 (from `v01.00.F4`; note: `main` has not been merged since Fase 1.2 - every phase has
 lived in its own feature branch with a closing tag, `main` was never used as an
@@ -224,7 +224,7 @@ pattern:
 | Subfase | Content | Status |
 |---|---|---|
 | F5.1 | Pure core: zone catalog + unlock evaluation, reward calculation, pantry helpers, food prices | **DONE** |
-| F5.2 | `SaveState` v6 (`wallet`/`unlockedZoneIds`/`pantry`) + migration v5->v6 + `SaveSystem` wiring | pending |
+| F5.2 | `SaveState` v6 (`wallet`/`unlockedZoneIds`/`pantry`) + migration v5->v6 + `SaveSystem` wiring | **DONE** |
 | F5.3 | `zone_opening` scene (new solo `SceneType`, protagonist = oldest resident) | pending |
 | F5.4 | UI: buy food with coins, pantry-gated giving, wallet display, zone celebration, reward feedback | pending |
 
@@ -254,6 +254,54 @@ pattern:
   project-wide.** All pure logic - no save/UI/events-pipeline wiring yet, so no live
   preview check for this subfase (nothing observable changed in the running app).
 - Model: Sonnet (construction on an already-closed design, matches AGENTS.md rubric).
+
+## Fase 5.2 - persistence (SaveState v6, SaveSystem wiring)
+- `SaveState` schema bumped to **6**: adds `wallet: {coins}`, `unlockedZoneIds:
+  ZoneId[]`, `pantry: PantryEntry[]`. Migration v5->v6 seeds `coins: 50` + a starter
+  pantry (3x the cheapest catalog food, computed dynamically from `FOOD_CATALOG`
+  rather than hardcoding an id, so it stays correct if prices/catalog change) *only
+  if* those fields are missing (an already-partial v5 save with its own wallet/pantry
+  is preserved, not reset). `unlockedZoneIds` is computed **retroactively** from the
+  save's existing resident count at migration time - so a veteran save doesn't fire
+  a wave of "new" zone-opening celebrations for progress it already had before this
+  feature shipped (residential is therefore never a celebration candidate either,
+  since it's included from minResidents=0 in every path, including
+  `createEmptySaveState`).
+- `createEmptySaveState` also seeds the same 50 coins + starter pantry (a brand-new
+  player and a migrated one get the same starting economy - no special-casing).
+- `SaveSystem.applyWorldDecay` now also evaluates zone unlocks (`newlyUnlockedZones`)
+  on every call where residents exist, **independent of whether time elapsed**
+  (zone unlocks depend on resident count, not the clock) - restructured from 3
+  separate early-return/persist branches into one, so needs-decay, relationship-decay,
+  and the zone check share a single persisted write. **Known gap, deferred to F5.3**:
+  this persists the updated `unlockedZoneIds` but does not expose which zones are
+  newly unlocked to the caller, and does not generate a `zone_opening` scene yet -
+  F5.3 still needs to decide how to track "already celebrated" (the `sceneLog`'s
+  cap-20 rollover makes it unreliable for a use-once trigger).
+- `SaveSystem.buyFood(foodId, qty)`: looks up the food's price, checks funds, deducts
+  coins, adds to pantry (`addToPantry`), one write. Throws on non-positive qty,
+  unknown food id, or insufficient coins - wallet never goes negative.
+- `SaveSystem.resolveScene`: both branches (solo and social) now add
+  `coinsForScene(intent)` to `wallet.coins` as part of the same existing single
+  write - no new I/O.
+- **Deliberately NOT done in F5.2** (per the F5 subfase split): gating the two
+  existing food-giving paths (the panel's direct "Dar comida" button and the F3
+  hungry-scene resolution) on actual pantry stock. The pantry data/helpers are ready
+  (F5.1); wiring the UI to check/consume stock and disable the button at zero is
+  F5.4's job, consistent with how F4.2 built `resolveRelationshipAction` as a
+  standalone capability before F4.3/F4.4 wired it into scenes/UI.
+- Tests: `tests/save-system.test.ts` +9 (migration v5->v6 seeding + preserving an
+  existing wallet/pantry, zone unlock via `applyWorldDecay` including the
+  zero-elapsed-time case, `buyFood` success + all three rejection paths, coin reward
+  on both a solo and a social scene resolution). Also fixed 2 pre-existing fixture
+  tests that hardcoded a full `SaveState` shape without the new v6 fields (same
+  pattern as every prior schema bump). **162 tests total, project-wide.**
+- Validated end-to-end in the browser against real IndexedDB: wrote a raw v5 save
+  directly to storage, loaded it through `SaveSystem` and confirmed schema 6 +
+  50 coins + 3 starter apples + retroactively-unlocked `residential`/`food_shop`;
+  resolved that resident's urgent hunger scene and confirmed coins went 50->60
+  (10, the urgent reward); bought ramen (18 coins) and confirmed coins went 60->42
+  and the pantry gained it. Zero console errors throughout.
 
 ## Fase 1.2 — personalidad: sliders → tags/categoría/expresión
 - `src/core/personality-derived.ts`: proyecciones puras y deterministas de los 6 sliders

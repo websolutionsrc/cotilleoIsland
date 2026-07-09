@@ -1,7 +1,11 @@
 import type { Resident } from "@/core/resident";
 import type { ResidentId } from "@/core/ids";
 import { decayNeeds } from "@/core/needs";
+import { addToPantry } from "@/core/pantry";
+import { FOOD_CATALOG } from "@/data/foods";
+import { newlyUnlockedZones } from "@/data/zones";
 import {
+  coinsForScene,
   detectSceneCandidates,
   detectSocialSceneCandidates,
   isSocialSceneType,
@@ -87,34 +91,76 @@ export class SaveSystem {
   }
 
   /**
-   * Aplica el decaimiento temporal de necesidades y de relaciones (F4), y
-   * persiste el resultado. Diseñado para llamarse al abrir/cargar la isla,
-   * antes de renderizar UI. Sustituye a `applyNeedsDecay` (F2/F3): ambos
-   * decaimientos comparten el mismo tick de mundo (`needsUpdatedAtMs`).
+   * Aplica el decaimiento temporal de necesidades y de relaciones (F4), evalua
+   * desbloqueos de zona (F5, "se evaluan al abrir" - independiente de si paso
+   * tiempo, ya que depende del numero de residentes, no del reloj), y
+   * persiste el resultado en una sola escritura. Disenado para llamarse al
+   * abrir/cargar la isla, antes de renderizar UI. Sustituye a
+   * `applyNeedsDecay` (F2/F3): needs y relaciones comparten el mismo tick de
+   * mundo (`needsUpdatedAtMs`).
+   *
+   * Nota para F5.3: esto persiste `unlockedZoneIds` pero NO expone que zonas
+   * son nuevas ni genera la escena `zone_opening` todavia - F5.3 decide como
+   * rastrear "ya celebrado" (el sceneLog tiene cap 20 y no sirve para eso).
    */
   async applyWorldDecay(nowMs = this.nowMs()): Promise<SaveState> {
     const state = await this.loadState();
     if (state.residents.length === 0) return state;
 
-    if (state.needsUpdatedAtMs === null) {
-      const seeded: SaveState = { ...state, needsUpdatedAtMs: nowMs };
-      await this.persistState(seeded);
-      return seeded;
-    }
+    const newlyUnlocked = newlyUnlockedZones(state.residents.length, state.unlockedZoneIds);
+    const needsSeedOnly = state.needsUpdatedAtMs === null;
+    const elapsedMs = needsSeedOnly ? 0 : Math.max(0, nowMs - state.needsUpdatedAtMs!);
 
-    const elapsedMs = Math.max(0, nowMs - state.needsUpdatedAtMs);
-    if (elapsedMs === 0) return state;
+    if (elapsedMs === 0 && newlyUnlocked.length === 0 && !needsSeedOnly) {
+      return state;
+    }
 
     const next: SaveState = {
       ...state,
-      residents: state.residents.map((resident) => ({
-        ...resident,
-        needs: decayNeeds(resident.needs, elapsedMs),
-      })),
-      relationships: state.relationships.map((relationship) =>
-        decayRelationship(relationship, elapsedMs, nowMs),
-      ),
+      residents:
+        elapsedMs > 0
+          ? state.residents.map((resident) => ({
+              ...resident,
+              needs: decayNeeds(resident.needs, elapsedMs),
+            }))
+          : state.residents,
+      relationships:
+        elapsedMs > 0
+          ? state.relationships.map((relationship) => decayRelationship(relationship, elapsedMs, nowMs))
+          : state.relationships,
       needsUpdatedAtMs: nowMs,
+      unlockedZoneIds:
+        newlyUnlocked.length > 0 ? [...state.unlockedZoneIds, ...newlyUnlocked] : state.unlockedZoneIds,
+    };
+    await this.persistState(next);
+    return next;
+  }
+
+  /**
+   * Compra `qty` unidades de una comida del catalogo y las anade a la
+   * despensa, descontando el coste total del monedero. Persiste en una sola
+   * escritura. Lanza si la comida no existe, `qty` no es positivo, o no hay
+   * monedas suficientes (nunca deja el monedero en negativo).
+   */
+  async buyFood(foodId: string, qty: number): Promise<SaveState> {
+    if (qty <= 0) {
+      throw new Error("qty must be a positive integer");
+    }
+    const food = FOOD_CATALOG.find((item) => item.id === foodId);
+    if (!food) {
+      throw new Error(`Unknown food id: ${foodId}`);
+    }
+
+    const state = await this.loadState();
+    const totalCost = food.price * qty;
+    if (state.wallet.coins < totalCost) {
+      throw new Error("Not enough coins");
+    }
+
+    const next: SaveState = {
+      ...state,
+      wallet: { coins: state.wallet.coins - totalCost },
+      pantry: addToPantry(state.pantry, foodId, qty),
     };
     await this.persistState(next);
     return next;
@@ -248,6 +294,7 @@ export class SaveSystem {
           { sceneType: intent.sceneType, participants: intent.participants, atMs: nowMs },
         ].slice(-SCENE_LOG_CAP),
         stats: { scenesResolved: state.stats.scenesResolved + 1 },
+        wallet: { coins: state.wallet.coins + coinsForScene(intent) },
       };
       await this.persistState(next);
       return next;
@@ -273,6 +320,7 @@ export class SaveSystem {
         { sceneType: intent.sceneType, participants: intent.participants, atMs: nowMs },
       ].slice(-SCENE_LOG_CAP),
       stats: { scenesResolved: state.stats.scenesResolved + 1 },
+      wallet: { coins: state.wallet.coins + coinsForScene(intent) },
     };
     await this.persistState(next);
     return next;

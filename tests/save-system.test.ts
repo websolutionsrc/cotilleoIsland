@@ -26,7 +26,7 @@ describe("SaveSystem con InMemoryStorage", () => {
     saveSystem = new SaveSystem(storage);
   });
 
-  it("empieza con un SaveState vacío en la versión actual", async () => {
+  it("empieza con un SaveState vacío en la versión actual (con arranque de F5)", async () => {
     const state = await saveSystem.loadState();
     expect(state).toEqual({
       schemaVersion: CURRENT_SCHEMA_VERSION,
@@ -36,6 +36,9 @@ describe("SaveSystem con InMemoryStorage", () => {
       sceneLog: [],
       stats: { scenesResolved: 0 },
       relationships: [],
+      wallet: { coins: 50 },
+      unlockedZoneIds: ["residential"],
+      pantry: [{ itemId: "food_apple", qty: 3 }],
     });
   });
 
@@ -182,6 +185,9 @@ describe("migrateSaveState (migraciones incrementales)", () => {
       sceneLog: [],
       stats: { scenesResolved: 0 },
       relationships: [],
+      wallet: { coins: 50 },
+      unlockedZoneIds: ["residential", "food_shop"],
+      pantry: [{ itemId: "food_apple", qty: 3 }],
     };
 
     expect(migrateSaveState(state)).toEqual(state);
@@ -450,5 +456,128 @@ describe("SaveSystem social scenes (F4.3)", () => {
     const [scene] = await saveSystem.computeActiveScenes(1000, 123);
 
     await expect(saveSystem.resolveScene(scene!)).rejects.toThrow(/requires a SceneResolutionAction/);
+  });
+});
+
+describe("migrateSaveState v5 -> v6 (F5 economy)", () => {
+  it("seeds starter coins, starter pantry, and retroactively unlocked zones", () => {
+    const resident = createResident({ name: "Lina" });
+    const v5State = {
+      schemaVersion: 5,
+      residents: [resident, createResident({ name: "Nico" }), createResident({ name: "Gala" })],
+      activeResidentId: resident.id,
+      needsUpdatedAtMs: 123,
+      sceneLog: [],
+      stats: { scenesResolved: 0 },
+      relationships: [],
+    };
+
+    const migrated = migrateSaveState(v5State, 1000);
+
+    expect(migrated.schemaVersion).toBe(6);
+    expect(migrated.wallet).toEqual({ coins: 50 });
+    expect(migrated.pantry).toEqual([{ itemId: "food_apple", qty: 3 }]);
+    // 3 residents: residential (0) + food_shop (1) + clothes_shop (3), NOT plaza (5).
+    expect(migrated.unlockedZoneIds.sort()).toEqual(["clothes_shop", "food_shop", "residential"].sort());
+  });
+
+  it("preserves an existing wallet/pantry instead of resetting them", () => {
+    const resident = createResident({ name: "Lina" });
+    const partial = {
+      schemaVersion: 5,
+      residents: [resident],
+      activeResidentId: resident.id,
+      needsUpdatedAtMs: 123,
+      sceneLog: [],
+      stats: { scenesResolved: 0 },
+      relationships: [],
+      wallet: { coins: 999 },
+      pantry: [{ itemId: "food_ramen", qty: 7 }],
+    };
+
+    const migrated = migrateSaveState(partial, 1000);
+
+    expect(migrated.wallet).toEqual({ coins: 999 });
+    expect(migrated.pantry).toEqual([{ itemId: "food_ramen", qty: 7 }]);
+  });
+});
+
+describe("SaveSystem economy (F5.2)", () => {
+  it("applyWorldDecay unlocks a new zone once resident count crosses a threshold", async () => {
+    const storage = new InMemoryStorage();
+    const saveSystem = new SaveSystem(storage, () => 0);
+    const residents = [1, 2, 3].map((n) => createResident({ name: `R${n}` }));
+    for (const r of residents) await saveSystem.saveResident(r);
+
+    const next = await saveSystem.applyWorldDecay(0);
+
+    expect(next.unlockedZoneIds.sort()).toEqual(["clothes_shop", "food_shop", "residential"].sort());
+  });
+
+  it("applyWorldDecay checks zone unlocks even with zero elapsed time", async () => {
+    const storage = new InMemoryStorage();
+    const saveSystem = new SaveSystem(storage, () => 1000);
+    await saveSystem.saveResident(createResident({ name: "Lina" }));
+    await saveSystem.applyWorldDecay(1000); // seeds needsUpdatedAtMs, no time elapsed yet
+
+    const withThree = [createResident({ name: "Nico" }), createResident({ name: "Gala" })];
+    for (const r of withThree) await saveSystem.saveResident(r);
+
+    // Same instant (1000): elapsedMs will be 0, but the zone check must still run.
+    const next = await saveSystem.applyWorldDecay(1000);
+    expect(next.unlockedZoneIds).toContain("clothes_shop");
+  });
+
+  it("buyFood deducts coins and adds to the pantry in one write", async () => {
+    const storage = new CountingStorage();
+    const saveSystem = new SaveSystem(storage, () => 1000);
+    await saveSystem.saveResident(createResident({ name: "Lina" }));
+    storage.setCalls = 0;
+
+    const next = await saveSystem.buyFood("food_apple", 2); // 5 coins each, starts with 50
+
+    expect(next.wallet.coins).toBe(40);
+    expect(next.pantry.find((e) => e.itemId === "food_apple")?.qty).toBe(5); // 3 starter + 2 bought
+    expect(storage.setCalls).toBe(1);
+  });
+
+  it("buyFood rejects insufficient funds, unknown items, and non-positive quantities", async () => {
+    const storage = new InMemoryStorage();
+    const saveSystem = new SaveSystem(storage, () => 1000);
+    await saveSystem.saveResident(createResident({ name: "Lina" }));
+
+    await expect(saveSystem.buyFood("food_apple", 0)).rejects.toThrow(/positive/);
+    await expect(saveSystem.buyFood("food_unknown", 1)).rejects.toThrow(/Unknown food id/);
+    await expect(saveSystem.buyFood("food_ramen", 100)).rejects.toThrow(/Not enough coins/);
+  });
+
+  it("resolveScene awards coins on a solo scene resolution", async () => {
+    const storage = new InMemoryStorage();
+    const saveSystem = new SaveSystem(storage, () => 1000);
+    const resident = createResident({ name: "Lina", needs: { hunger: 90 } });
+    await saveSystem.saveResident(resident);
+    const [scene] = await saveSystem.computeActiveScenes(1000, 123);
+
+    const next = await saveSystem.resolveScene(scene!, {
+      kind: "give_food",
+      foodEffect: { needsDelta: { hunger: -50 } },
+    });
+
+    expect(next.wallet.coins).toBe(60); // 50 starter + 10 (urgent hunger)
+  });
+
+  it("resolveScene awards coins on a social scene resolution", async () => {
+    const storage = new InMemoryStorage();
+    const saveSystem = new SaveSystem(storage, () => 1000);
+    const a = createResident({ name: "Lina" });
+    const b = createResident({ name: "Nico" });
+    await saveSystem.saveResident(a);
+    await saveSystem.saveResident(b);
+    const [scene] = await saveSystem.computeActiveScenes(1000, 123);
+    expect(scene?.sceneType).toBe("meet");
+
+    const next = await saveSystem.resolveScene(scene!);
+
+    expect(next.wallet.coins).toBe(55); // 50 starter + 5 (meet, not urgent)
   });
 });

@@ -2,6 +2,7 @@ import type { Resident } from "@/core/resident";
 import type { ResidentId } from "@/core/ids";
 import { DEFAULT_PERSONALITY, type Personality } from "@/core/personality";
 import { normalizeNeeds, type Needs } from "@/core/needs";
+import type { PantryEntry } from "@/core/pantry";
 import {
   SCENE_LOG_CAP,
   SOCIAL_SCENE_TYPES,
@@ -10,9 +11,11 @@ import {
   type SceneType,
 } from "@/events/types";
 import { orderedPair, type Relationship, type RelationshipStatus } from "@/relationships";
+import { FOOD_CATALOG } from "@/data/foods";
+import { ZONE_CATALOG, evaluateZoneUnlocks, type ZoneId } from "@/data/zones";
 
 /** Versión actual del esquema de guardado. Incrementar al cambiar la forma de `SaveState`. */
-export const CURRENT_SCHEMA_VERSION = 5;
+export const CURRENT_SCHEMA_VERSION = 6;
 
 /** Estado de guardado completo, versionado. Ver docs/data_model.md. */
 export interface SaveState {
@@ -23,6 +26,18 @@ export interface SaveState {
   sceneLog: SceneLogEntry[];
   stats: SceneStats;
   relationships: Relationship[];
+  wallet: { coins: number };
+  unlockedZoneIds: ZoneId[];
+  pantry: PantryEntry[];
+}
+
+const STARTER_COINS = 50;
+const STARTER_PANTRY_QTY = 3;
+
+/** Despensa inicial: 3 unidades de la comida más barata del catálogo. */
+function starterPantry(): PantryEntry[] {
+  const cheapest = [...FOOD_CATALOG].sort((a, b) => a.price - b.price)[0];
+  return cheapest ? [{ itemId: cheapest.id, qty: STARTER_PANTRY_QTY }] : [];
 }
 
 export function createEmptySaveState(): SaveState {
@@ -34,6 +49,9 @@ export function createEmptySaveState(): SaveState {
     sceneLog: [],
     stats: { scenesResolved: 0 },
     relationships: [],
+    wallet: { coins: STARTER_COINS },
+    unlockedZoneIds: evaluateZoneUnlocks(0), // = ["residential"], siempre disponible
+    pantry: starterPantry(),
   };
 }
 
@@ -137,6 +155,39 @@ function normalizeRelationships(raw: unknown, nowMs: number): Relationship[] {
     .filter((entry): entry is Relationship => entry !== null);
 }
 
+function normalizeWallet(raw: unknown): { coins: number } {
+  if (raw === null || typeof raw !== "object") return { coins: 0 };
+  const coins = (raw as Record<string, unknown>).coins;
+  return {
+    coins: typeof coins === "number" && Number.isFinite(coins) ? Math.max(0, Math.round(coins)) : 0,
+  };
+}
+
+const ZONE_IDS: readonly ZoneId[] = ZONE_CATALOG.map((zone) => zone.id);
+
+function isZoneId(value: unknown): value is ZoneId {
+  return typeof value === "string" && ZONE_IDS.includes(value as ZoneId);
+}
+
+function normalizeUnlockedZoneIds(raw: unknown): ZoneId[] {
+  if (!Array.isArray(raw)) return [];
+  return [...new Set(raw.filter(isZoneId))];
+}
+
+function isRawPantryEntry(value: unknown): value is { itemId: string; qty: number } {
+  if (value === null || typeof value !== "object") return false;
+  const raw = value as Record<string, unknown>;
+  return typeof raw.itemId === "string" && typeof raw.qty === "number" && Number.isFinite(raw.qty);
+}
+
+function normalizePantry(raw: unknown): PantryEntry[] {
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .filter(isRawPantryEntry)
+    .map((entry) => ({ itemId: entry.itemId, qty: Math.max(0, Math.round(entry.qty)) }))
+    .filter((entry) => entry.qty > 0);
+}
+
 /**
  * Migra un `SaveState` guardado (de cualquier versión anterior) a la versión
  * actual, aplicando los pasos incrementales que hagan falta (v0 -> v1 -> v2 ->
@@ -166,6 +217,9 @@ export function migrateSaveState(raw: UnknownSaveState, nowMs = Date.now()): Sav
           sceneLog: [],
           stats: { scenesResolved: 0 },
           relationships: [],
+          wallet: { coins: 0 },
+          unlockedZoneIds: [],
+          pantry: [],
         }
       : (raw as unknown as SaveState);
 
@@ -228,11 +282,31 @@ export function migrateSaveState(raw: UnknownSaveState, nowMs = Date.now()): Sav
     };
   }
 
+  if (state.schemaVersion < 6) {
+    // v5 -> v6: F5 añade economía. Se siembran monedas/despensa iniciales
+    // (para no romper de golpe el flujo de comida, que era gratis) y
+    // `unlockedZoneIds` se calcula RETROACTIVAMENTE según el número de
+    // residentes ya existente, para no disparar celebraciones de zona por
+    // progreso que el jugador ya tenía antes de que existiera esta feature.
+    const existingWallet = (state as Partial<SaveState>).wallet;
+    const existingPantry = (state as Partial<SaveState>).pantry;
+    state = {
+      ...state,
+      schemaVersion: 6,
+      wallet: existingWallet ? normalizeWallet(existingWallet) : { coins: STARTER_COINS },
+      unlockedZoneIds: evaluateZoneUnlocks(state.residents.length),
+      pantry: existingPantry ? normalizePantry(existingPantry) : starterPantry(),
+    };
+  }
+
   state = {
     ...state,
     sceneLog: normalizeSceneLog(state.sceneLog, nowMs),
     stats: normalizeStats(state.stats),
     relationships: normalizeRelationships(state.relationships, nowMs),
+    wallet: normalizeWallet(state.wallet),
+    unlockedZoneIds: normalizeUnlockedZoneIds(state.unlockedZoneIds),
+    pantry: normalizePantry(state.pantry),
   };
 
   return state;

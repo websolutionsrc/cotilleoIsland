@@ -2,6 +2,43 @@
 
 Formato: entradas por fase/hito. Fechas en `YYYY-MM-DD`.
 
+## [F5.2] - 2026-07-10
+
+### Added
+- `SaveState` schema v6: `wallet: {coins}`, `unlockedZoneIds: ZoneId[]`,
+  `pantry: PantryEntry[]`. Migration v5->v6 seeds 50 coins + 3x cheapest
+  food (starter pantry, computed dynamically from `FOOD_CATALOG`) unless
+  those fields already exist; `unlockedZoneIds` computed retroactively from
+  the save's resident count so veteran saves don't trigger a wave of
+  false "new zone" celebrations.
+- `SaveSystem.buyFood(foodId, qty)`: deducts coins, adds to pantry, one
+  write. Rejects non-positive qty, unknown items, insufficient funds.
+- `SaveSystem.resolveScene` now awards `coinsForScene(intent)` on every
+  resolution (solo and social) in the same existing write.
+- `SaveSystem.applyWorldDecay` now also evaluates zone unlocks on every
+  call with residents present, independent of elapsed time (zone unlocks
+  depend on resident count, not the clock) - restructured to one
+  persisted write covering needs decay, relationship decay, and unlocks.
+
+### Notes
+- Deliberately deferred to F5.4: gating the existing food-giving UI paths
+  on actual pantry stock. F5.2 only builds the capability.
+- Known gap for F5.3: `applyWorldDecay` persists newly-unlocked zones but
+  doesn't yet expose them or generate a `zone_opening` celebration scene;
+  the sceneLog's cap-20 rollover makes it unreliable for tracking
+  "already celebrated" - F5.3 needs its own answer for this.
+
+### Validation
+- +9 tests in `tests/save-system.test.ts` (migration seeding/preservation,
+  zone unlock incl. zero-elapsed-time, buyFood success/rejections, coin
+  reward on solo and social resolution). Fixed 2 pre-existing fixture
+  tests missing the new v6 fields. 162 tests total, green. `npm run build`
+  green. Phaser coupling clean, zero control-byte artifacts.
+- Live preview against real IndexedDB: migrated a raw v5 save, confirmed
+  schema 6 + starter economy + retroactive unlocks; resolved an urgent
+  hunger scene (50->60 coins); bought ramen (60->42 coins, pantry
+  updated). Zero console errors.
+
 ## [F5.1] - 2026-07-09
 
 ### Added
