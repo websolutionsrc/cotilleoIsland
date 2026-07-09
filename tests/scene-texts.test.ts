@@ -58,6 +58,17 @@ describe("sceneTextFor", () => {
       ),
     ).not.toHaveLength(0);
   });
+
+  it("mentions the zone name for zone_opening scenes", () => {
+    const resident = createResident({ id: RESIDENT_ID, name: "Lina" });
+
+    expect(
+      sceneTextFor(
+        intent({ sceneType: "zone_opening", cause: { kind: "zone", zoneId: "food_shop" } }),
+        resident,
+      ),
+    ).toContain("Tienda de comida");
+  });
 });
 
 describe("sceneTextFor for social scenes", () => {
@@ -137,5 +148,18 @@ describe("resolveSceneNeeds", () => {
     );
 
     expect(updated.needs.hunger).toBe(40);
+  });
+
+  it("celebrates a zone_opening scene with a mood boost", () => {
+    const resident = createResident({
+      id: RESIDENT_ID,
+      name: "Lina",
+      needs: { ...DEFAULT_NEEDS, mood: 50 },
+    });
+    const zoneIntent = intent({ sceneType: "zone_opening", cause: { kind: "zone", zoneId: "food_shop" } });
+    const action = defaultActionForScene(zoneIntent);
+
+    expect(action).toEqual({ kind: "celebrate" });
+    expect(resolveSceneNeeds(resident, zoneIntent, action!).needs.mood).toBe(60);
   });
 });

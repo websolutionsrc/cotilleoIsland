@@ -2,6 +2,7 @@ import { LOW_MOOD_THRESHOLD } from "@/core/needs";
 import { personalityToTags } from "@/core/personality-derived";
 import type { Resident } from "@/core/resident";
 import { findQuirk } from "@/data/quirks";
+import { findZone } from "@/data/zones";
 import {
   isSocialSceneType,
   type SceneIntent,
@@ -15,6 +16,7 @@ const DEFAULT_TEXT: Record<SoloSceneType, string> = {
   bored: "Can we do something fun?",
   lonely: "I would like to talk for a bit.",
   quirk: "Something oddly charming is happening.",
+  zone_opening: "A new part of the island has opened up!",
 };
 
 const TAG_ENERGETIC = "enérgica";
@@ -93,6 +95,11 @@ export function sceneTextFor(intent: SceneIntent, resident: Resident, counterpar
 
   if (intent.sceneType === "quirk" && intent.cause.kind === "quirk") {
     return QUIRK_TEXT[intent.cause.quirkId] ?? findQuirk(intent.cause.quirkId)?.name ?? DEFAULT_TEXT.quirk;
+  }
+
+  if (intent.sceneType === "zone_opening" && intent.cause.kind === "zone") {
+    const zoneName = findZone(intent.cause.zoneId)?.name;
+    return zoneName ? `${zoneName} has just opened!` : DEFAULT_TEXT.zone_opening;
   }
 
   if (resident.needs.mood <= LOW_MOOD_THRESHOLD) {

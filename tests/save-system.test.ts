@@ -39,6 +39,7 @@ describe("SaveSystem con InMemoryStorage", () => {
       wallet: { coins: 50 },
       unlockedZoneIds: ["residential"],
       pantry: [{ itemId: "food_apple", qty: 3 }],
+      celebratedZoneIds: ["residential"],
     });
   });
 
@@ -188,6 +189,7 @@ describe("migrateSaveState (migraciones incrementales)", () => {
       wallet: { coins: 50 },
       unlockedZoneIds: ["residential", "food_shop"],
       pantry: [{ itemId: "food_apple", qty: 3 }],
+      celebratedZoneIds: ["residential", "food_shop"],
     };
 
     expect(migrateSaveState(state)).toEqual(state);
@@ -474,11 +476,14 @@ describe("migrateSaveState v5 -> v6 (F5 economy)", () => {
 
     const migrated = migrateSaveState(v5State, 1000);
 
-    expect(migrated.schemaVersion).toBe(6);
+    expect(migrated.schemaVersion).toBe(CURRENT_SCHEMA_VERSION);
     expect(migrated.wallet).toEqual({ coins: 50 });
     expect(migrated.pantry).toEqual([{ itemId: "food_apple", qty: 3 }]);
     // 3 residents: residential (0) + food_shop (1) + clothes_shop (3), NOT plaza (5).
     expect(migrated.unlockedZoneIds.sort()).toEqual(["clothes_shop", "food_shop", "residential"].sort());
+    // v6 -> v7 (F5.3): lo ya desbloqueado se marca celebrado retroactivamente,
+    // sin disparar una escena zone_opening por progreso previo a la feature.
+    expect(migrated.celebratedZoneIds.sort()).toEqual(migrated.unlockedZoneIds.sort());
   });
 
   it("preserves an existing wallet/pantry instead of resetting them", () => {
@@ -579,5 +584,46 @@ describe("SaveSystem economy (F5.2)", () => {
     const next = await saveSystem.resolveScene(scene!);
 
     expect(next.wallet.coins).toBe(55); // 50 starter + 5 (meet, not urgent)
+  });
+});
+
+describe("SaveSystem zone_opening (F5.3)", () => {
+  it("detects a zone_opening scene once a zone unlocks and marks it celebrated on resolution", async () => {
+    const storage = new InMemoryStorage();
+    const saveSystem = new SaveSystem(storage, () => 1000);
+    const oldest = createResident({ name: "Lina" });
+    await saveSystem.saveResident(oldest);
+    const others = [createResident({ name: "Nico" }), createResident({ name: "Gala" })];
+    for (const r of others) await saveSystem.saveResident(r);
+
+    // 3 residents cross the food_shop (1) and clothes_shop (3) thresholds.
+    const decayed = await saveSystem.applyWorldDecay(1000);
+    expect(decayed.unlockedZoneIds).toEqual(
+      expect.arrayContaining(["food_shop", "clothes_shop"]),
+    );
+    expect(decayed.celebratedZoneIds).toEqual(["residential"]);
+
+    const scenes = await saveSystem.computeActiveScenes(1000, 123);
+    const zoneScene = scenes.find((s) => s.sceneType === "zone_opening");
+    expect(zoneScene?.participants).toEqual([oldest.id]);
+    expect(zoneScene?.cause).toEqual({ kind: "zone", zoneId: "food_shop" });
+
+    const resolved = await saveSystem.resolveScene(zoneScene!, { kind: "celebrate" });
+    expect(resolved.celebratedZoneIds).toContain("food_shop");
+    expect(resolved.celebratedZoneIds).not.toContain("clothes_shop");
+  });
+
+  it("does not re-offer a zone_opening scene once it has been celebrated", async () => {
+    const storage = new InMemoryStorage();
+    const saveSystem = new SaveSystem(storage, () => 1000);
+    await saveSystem.saveResident(createResident({ name: "Lina" }));
+    await saveSystem.applyWorldDecay(1000);
+
+    const [scene] = await saveSystem.computeActiveScenes(1000, 123);
+    expect(scene?.sceneType).toBe("zone_opening");
+    await saveSystem.resolveScene(scene!, { kind: "celebrate" });
+
+    const scenesAfter = await saveSystem.computeActiveScenes(1000, 123);
+    expect(scenesAfter.some((s) => s.sceneType === "zone_opening")).toBe(false);
   });
 });

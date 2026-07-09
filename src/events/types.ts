@@ -1,7 +1,8 @@
 import type { ResidentId } from "@/core/ids";
 import type { Needs } from "@/core/needs";
+import type { ZoneId } from "@/data/zones";
 
-export type SoloSceneType = "hungry" | "tired" | "bored" | "lonely" | "quirk";
+export type SoloSceneType = "hungry" | "tired" | "bored" | "lonely" | "quirk" | "zone_opening";
 
 // Escenas sociales (F4): siempre 2 participantes. Comparten nombre con
 // `RelationshipAction` (src/relationships/status.ts) por diseño - el mapeo es
@@ -34,7 +35,8 @@ export function isSocialSceneType(sceneType: SceneType): sceneType is SocialScen
 export type SceneCause =
   | { kind: "need"; need: keyof Needs; value: number }
   | { kind: "quirk"; quirkId: string }
-  | { kind: "social" };
+  | { kind: "social" }
+  | { kind: "zone"; zoneId: ZoneId };
 
 export interface SceneIntent {
   sceneType: SceneType;

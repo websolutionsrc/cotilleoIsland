@@ -199,6 +199,7 @@ export function mountResidentPanel(options: ResidentPanelOptions): ResidentPanel
     play: "Jugar un rato",
     chat: "Charlar",
     observe: "Observar",
+    celebrate: "Celebrar",
   };
 
   function actionForActiveScene(): SceneResolutionAction | null {
@@ -216,6 +217,8 @@ export function mountResidentPanel(options: ResidentPanelOptions): ResidentPanel
         return { kind: "chat" };
       case "quirk":
         return { kind: "observe" };
+      case "zone_opening":
+        return { kind: "celebrate" };
       default:
         // Escenas sociales (F4): resuelven de forma determinista sin elegir
         // SceneResolutionAction; F4.4 les dara su propio boton/flujo de UI.

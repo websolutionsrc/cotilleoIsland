@@ -15,7 +15,7 @@ import { FOOD_CATALOG } from "@/data/foods";
 import { ZONE_CATALOG, evaluateZoneUnlocks, type ZoneId } from "@/data/zones";
 
 /** Versión actual del esquema de guardado. Incrementar al cambiar la forma de `SaveState`. */
-export const CURRENT_SCHEMA_VERSION = 6;
+export const CURRENT_SCHEMA_VERSION = 7;
 
 /** Estado de guardado completo, versionado. Ver docs/data_model.md. */
 export interface SaveState {
@@ -29,6 +29,7 @@ export interface SaveState {
   wallet: { coins: number };
   unlockedZoneIds: ZoneId[];
   pantry: PantryEntry[];
+  celebratedZoneIds: ZoneId[];
 }
 
 const STARTER_COINS = 50;
@@ -52,6 +53,11 @@ export function createEmptySaveState(): SaveState {
     wallet: { coins: STARTER_COINS },
     unlockedZoneIds: evaluateZoneUnlocks(0), // = ["residential"], siempre disponible
     pantry: starterPantry(),
+    // La zona residencial siempre esta desbloqueada desde el inicio: no es un
+    // hito que "abrir", asi que nace ya celebrada (evita una escena
+    // zone_opening espuria en la primerisima carga, antes de que exista
+    // ningun residente que pueda protagonizarla).
+    celebratedZoneIds: evaluateZoneUnlocks(0),
   };
 }
 
@@ -64,6 +70,7 @@ const SCENE_TYPES: readonly SceneType[] = [
   "bored",
   "lonely",
   "quirk",
+  "zone_opening",
   ...SOCIAL_SCENE_TYPES,
 ];
 
@@ -220,6 +227,7 @@ export function migrateSaveState(raw: UnknownSaveState, nowMs = Date.now()): Sav
           wallet: { coins: 0 },
           unlockedZoneIds: [],
           pantry: [],
+          celebratedZoneIds: [],
         }
       : (raw as unknown as SaveState);
 
@@ -299,6 +307,22 @@ export function migrateSaveState(raw: UnknownSaveState, nowMs = Date.now()): Sav
     };
   }
 
+  if (state.schemaVersion < 7) {
+    // v6 -> v7: F5.3 añade la celebración de apertura de zona. Se siembra
+    // `celebratedZoneIds` = `unlockedZoneIds` RETROACTIVAMENTE: las zonas ya
+    // desbloqueadas antes de que existiera esta feature no deben disparar de
+    // golpe una escena `zone_opening` por cada una (mismo patrón que el
+    // cálculo retroactivo de `unlockedZoneIds` en v5 -> v6).
+    const existingCelebrated = (state as Partial<SaveState>).celebratedZoneIds;
+    state = {
+      ...state,
+      schemaVersion: 7,
+      celebratedZoneIds: existingCelebrated
+        ? normalizeUnlockedZoneIds(existingCelebrated)
+        : [...state.unlockedZoneIds],
+    };
+  }
+
   state = {
     ...state,
     sceneLog: normalizeSceneLog(state.sceneLog, nowMs),
@@ -307,6 +331,7 @@ export function migrateSaveState(raw: UnknownSaveState, nowMs = Date.now()): Sav
     wallet: normalizeWallet(state.wallet),
     unlockedZoneIds: normalizeUnlockedZoneIds(state.unlockedZoneIds),
     pantry: normalizePantry(state.pantry),
+    celebratedZoneIds: normalizeUnlockedZoneIds(state.celebratedZoneIds),
   };
 
   return state;

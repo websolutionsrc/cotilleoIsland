@@ -4,6 +4,7 @@ import type { CreateResidentInput } from "@/residents/factory";
 import { createResident } from "@/residents/factory";
 import {
   detectSceneCandidates,
+  detectZoneOpeningCandidates,
   filterScenesOnCooldown,
   mulberry32,
   scoreScene,
@@ -94,5 +95,32 @@ describe("cooldowns and selection", () => {
     );
 
     expect(selectScenes(candidates, { sceneLog: [], nowMs: NOW_MS })).toHaveLength(3);
+  });
+});
+
+describe("detectZoneOpeningCandidates (F5.3)", () => {
+  it("produces a candidate for each pending zone, starring the oldest resident", () => {
+    const oldest = residentWith({ name: "Lina" });
+    const newest = residentWith({ name: "Nico" });
+
+    const candidates = detectZoneOpeningCandidates(
+      [oldest, newest],
+      ["residential", "food_shop"],
+      ["residential"],
+      NOW_MS,
+    );
+
+    expect(candidates).toHaveLength(1);
+    expect(candidates[0]?.sceneType).toBe("zone_opening");
+    expect(candidates[0]?.participants).toEqual([oldest.id]);
+    expect(candidates[0]?.cause).toEqual({ kind: "zone", zoneId: "food_shop" });
+  });
+
+  it("returns nothing when there are no residents or nothing pending", () => {
+    const resident = residentWith({ name: "Lina" });
+    expect(detectZoneOpeningCandidates([], ["residential"], [], NOW_MS)).toEqual([]);
+    expect(
+      detectZoneOpeningCandidates([resident], ["residential"], ["residential"], NOW_MS),
+    ).toEqual([]);
   });
 });

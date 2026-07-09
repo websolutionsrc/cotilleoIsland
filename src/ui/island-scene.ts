@@ -30,6 +30,7 @@ const SCENE_ICONS: Record<SceneType, string> = {
   bored: "Play",
   lonely: "Chat",
   quirk: "Quirk",
+  zone_opening: "Zone",
   meet: "Meet",
   chat: "Talk",
   argument: "Argue",

@@ -2,6 +2,25 @@
 
 Formato: entradas por fase/hito. Fechas en `YYYY-MM-DD`.
 
+## [F5.3] - 2026-07-10
+
+### Added
+- New `SceneType`: `zone_opening`, a one-time celebration scene fired when a
+  new island zone unlocks. Protagonist is the oldest resident (stable array
+  insertion order). Wired into the full detect->cooldown->score->select->
+  resolve pipeline; text references the zone's real name; resolving it grants
+  `+10 mood` and the usual scene coin reward.
+- `pendingZoneCelebrations(unlockedZoneIds, celebratedZoneIds)` in
+  `src/data/zones.ts`: pure diff of unlocked-but-not-yet-celebrated zones.
+- `SaveState` schema v7: adds `celebratedZoneIds: ZoneId[]`. Migration v6->v7
+  seeds it retroactively from `unlockedZoneIds` so veteran saves don't fire a
+  burst of celebrations for progress that predates this feature.
+
+### Fixed
+- `createEmptySaveState` now seeds `celebratedZoneIds` with the always-unlocked
+  `residential` zone instead of `[]`, preventing a spurious "residential
+  opened!" scene on every brand-new save.
+
 ## [F5.2] - 2026-07-10
 
 ### Added

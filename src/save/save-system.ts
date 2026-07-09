@@ -8,6 +8,7 @@ import {
   coinsForScene,
   detectSceneCandidates,
   detectSocialSceneCandidates,
+  detectZoneOpeningCandidates,
   isSocialSceneType,
   mulberry32,
   relationshipActionForScene,
@@ -247,7 +248,16 @@ export class SaveSystem {
       const relationship = getRelationship(state.relationships, a.id, b.id);
       return detectSocialSceneCandidates(a, b, relationship, nowMs);
     });
-    return selectScenes([...soloCandidates, ...socialCandidates], { sceneLog: state.sceneLog, nowMs });
+    const zoneOpeningCandidates = detectZoneOpeningCandidates(
+      state.residents,
+      state.unlockedZoneIds,
+      state.celebratedZoneIds,
+      nowMs,
+    );
+    return selectScenes([...soloCandidates, ...socialCandidates, ...zoneOpeningCandidates], {
+      sceneLog: state.sceneLog,
+      nowMs,
+    });
   }
 
   /**
@@ -310,6 +320,8 @@ export class SaveSystem {
     }
 
     const updatedResident = resolveSceneNeeds(resident, intent, action);
+    const celebratedZoneId =
+      intent.sceneType === "zone_opening" && intent.cause.kind === "zone" ? intent.cause.zoneId : null;
     const next: SaveState = {
       ...state,
       residents: state.residents.map((candidate) =>
@@ -321,6 +333,9 @@ export class SaveSystem {
       ].slice(-SCENE_LOG_CAP),
       stats: { scenesResolved: state.stats.scenesResolved + 1 },
       wallet: { coins: state.wallet.coins + coinsForScene(intent) },
+      celebratedZoneIds: celebratedZoneId
+        ? [...state.celebratedZoneIds, celebratedZoneId]
+        : state.celebratedZoneIds,
     };
     await this.persistState(next);
     return next;

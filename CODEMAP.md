@@ -31,12 +31,12 @@ Mapa de módulos previstos. Se rellena a medida que se implementan (Fase 1: sist
 | **Core** | `src/core/` | Tipos base: `Resident`, `Personality`, `Needs`, `Avatar`, ids tipados (`ResidentId`); proyecciones puras de personalidad (`personality-derived.ts`); lógica pura de necesidades (`needs.ts`) | **Fase 2.1: core de necesidades implementado** (sin UI ni persistencia de F2 aún) |
 | **Residents** | `src/residents/` | `createResident`/`updateResident` (defaults + validación pura de nombre y personalidad) | **Fase 1: implementado** (sin inventario/nivel aún) |
 | **Relationships** | `src/relationships/` | `types/key/chemistry/status/decay/apply` — core puro: par normalizado `a<b`, `chemistry` (proyección pura), máquina de estados con guardas, decaimiento, `applyRelationshipAction` (deltas+status en un punto) | **F4 fully DONE (F4.1-F4.4), tagged v01.00.F4** |
-| **Events** | `src/events/` | `types/rng/detectors/cooldowns/select/resolve/resolve-social/reward` — pipeline puro detect→cooldown→score→select, `SceneIntent` efímera (solo + social), `sceneLog` cap 20, recompensa de monedas (F5.1) | **F3+F4 DONE; F5.1 reward.ts added, F5.2 SaveSystem wiring pending** |
-| **Dialogue** | `src/dialogue/` | V1: plantillas (`food-reactions.ts`, `scene-texts.ts` solo+social); V2: IA (`DialogueGenerator`) | **DONE for F3+F4 scene types** |
+| **Events** | `src/events/` | `types/rng/detectors/cooldowns/select/resolve/resolve-social/reward` — pipeline puro detect→cooldown→score→select, `SceneIntent` efímera (solo + social + `zone_opening`), `sceneLog` cap 20, recompensa de monedas (F5.1) | **F3+F4+F5.3 DONE; F5.4 UI wiring pending** |
+| **Dialogue** | `src/dialogue/` | V1: plantillas (`food-reactions.ts`, `scene-texts.ts` solo+social+zone_opening); V2: IA (`DialogueGenerator`) | **DONE for F3+F4+F5.3 scene types** |
 | **AI** (opcional) | `src/ai/` | DialogueEnhancer, DailyNarrator, MemorySummarizer, CatchphraseGenerator, EventSuggestor validado | pendiente (F6) |
-| **Save** | `src/save/` | `StoragePort` (`IndexedDbStorage` / `InMemoryStorage`) + `SaveSystem` (CRUD de residentes, `SaveState` v5 versionado, migración, decaimiento de mundo, escenas F3+F4) | **v5 DONE; v6 (wallet/zones/pantry) pending F5.2** |
-| **UI** | `src/ui/` | `IslandScene` (Phaser) + `resident-panel` (overlay DOM: crear/editar residente, multi-residente, personalidad, comida, escenas solo+sociales) | **F4.4 DONE; F5.4 shop/wallet UI pending** |
-| **Data** | `src/data/` | Catálogo de comidas (`foods.json`, ahora con `price`) + validación (`foods.ts`), quirks (`quirks.ts`), zonas (`zones.ts`, F5.1) | **F5.1 zones.ts added** |
+| **Save** | `src/save/` | `StoragePort` (`IndexedDbStorage` / `InMemoryStorage`) + `SaveSystem` (CRUD de residentes, `SaveState` v7 versionado, migración, decaimiento de mundo, escenas F3+F4+F5.3) | **v7 DONE** |
+| **UI** | `src/ui/` | `IslandScene` (Phaser) + `resident-panel` (overlay DOM: crear/editar residente, multi-residente, personalidad, comida, escenas solo+sociales+zone_opening) | **F4.4 DONE; F5.4 shop/wallet UI pending** |
+| **Data** | `src/data/` | Catálogo de comidas (`foods.json`, ahora con `price`) + validación (`foods.ts`), quirks (`quirks.ts`), zonas (`zones.ts`, F5.1+F5.3) | **F5.1+F5.3 DONE** |
 | **Visual direction** | `docs/art_library.md` + `docs/art/references/` + future `public/art/` | 2D art library: characters, outfits, environments, scene language, asset export rules and delegation guidelines so other models can produce visual work without touching the core | **F2.6 art library DONE (ADR 0006, Direction B "Storybook with volume"); pilot asset pass pending before mass batches** |
 
 ## Fase 4 - Relationships (F4.1 done; F4.2-F4.4 pending)
@@ -213,7 +213,7 @@ seeded `SaveSystem` calls.
   scene box correctly cleared afterward. Zero console errors throughout.
 - **F4 (Relationships) is now fully closed: F4.1-F4.4 all DONE.**
 
-## Fase 5 - Isla/progreso (F5.1-F5.2 done)
+## Fase 5 - Isla/progreso (F5.1-F5.3 done)
 Design in `docs/engine_design_f3-f5.md` section 4. Branch `develop/f5-island-progress`
 (from `v01.00.F4`; note: `main` has not been merged since Fase 1.2 - every phase has
 lived in its own feature branch with a closing tag, `main` was never used as an
@@ -225,7 +225,7 @@ pattern:
 |---|---|---|
 | F5.1 | Pure core: zone catalog + unlock evaluation, reward calculation, pantry helpers, food prices | **DONE** |
 | F5.2 | `SaveState` v6 (`wallet`/`unlockedZoneIds`/`pantry`) + migration v5->v6 + `SaveSystem` wiring | **DONE** |
-| F5.3 | `zone_opening` scene (new solo `SceneType`, protagonist = oldest resident) | pending |
+| F5.3 | `zone_opening` scene (new solo `SceneType`, protagonist = oldest resident) | **DONE** |
 | F5.4 | UI: buy food with coins, pantry-gated giving, wallet display, zone celebration, reward feedback | pending |
 
 - `src/data/zones.ts`: `ZONE_CATALOG` (5 fixed zones: `residential` always,
@@ -302,6 +302,67 @@ pattern:
   resolved that resident's urgent hunger scene and confirmed coins went 50->60
   (10, the urgent reward); bought ramen (18 coins) and confirmed coins went 60->42
   and the pantry gained it. Zero console errors throughout.
+
+## Fase 5.3 - zone_opening celebration scene
+- New `SceneType`: `"zone_opening"` (added to `SoloSceneType`), with a new
+  `SceneCause` variant `{ kind: "zone"; zoneId: ZoneId }`. Wired into the same
+  detect->cooldown->score->select->resolve pipeline as every other scene type
+  (weight 0.6, same tier as confess/propose - a rare milestone, not urgent
+  enough to eclipse real needs; cooldown 24h as a safety net only, since the
+  real "don't repeat" mechanism is `celebratedZoneIds`, not the cooldown).
+- `src/data/zones.ts`: new pure `pendingZoneCelebrations(unlockedZoneIds,
+  celebratedZoneIds)` - the diff between "unlocked" and "already celebrated".
+  Distinct from F5.1's `newlyUnlockedZones`: that one looks at a threshold
+  CROSSING at a single instant; this one looks at what's pending at ANY
+  moment (the player could unlock a zone and close the app before the scene
+  resolves).
+- `src/events/detectors.ts`: new `detectZoneOpeningCandidates(residents,
+  unlockedZoneIds, celebratedZoneIds, nowMs)` - unlike every other detector
+  (per-resident or per-pair), this one looks at the WHOLE colony, since the
+  celebration is an island-level milestone, not a personal one. Protagonist =
+  `residents[0]` (stable insertion order: `saveResident` always appends,
+  `removeResident` never reorders) used as a zero-cost proxy for "oldest
+  resident" - `Resident` has no creation-date field and adding one only for
+  this would violate YAGNI.
+- `src/events/resolve.ts`: new `"celebrate"` action kind, mapped from
+  `zone_opening` in `DEFAULT_ACTION_KIND_BY_SCENE`, needs delta `{mood: +10}`.
+- `src/dialogue/scene-texts.ts`: `zone_opening` text is generated from
+  `findZone(cause.zoneId)?.name` (e.g. "Tienda de ropa has just opened!"),
+  not a static string like the other solo scene types.
+- `src/save/save-state.ts`: schema bumped to **7**, adds `celebratedZoneIds:
+  ZoneId[]`. Migration v6->v7 seeds it **retroactively** from
+  `unlockedZoneIds` (same pattern as v5->v6's retroactive `unlockedZoneIds`) -
+  a veteran save's already-open zones don't suddenly need celebrating.
+  `createEmptySaveState` seeds `celebratedZoneIds` to `evaluateZoneUnlocks(0)`
+  (`["residential"]`), NOT `[]` - the residential zone is always unlocked
+  from minute zero, so it isn't a milestone to celebrate; a bug caught by the
+  test suite (fresh saves were generating a spurious "residential opened!"
+  scene ahead of `meet`/other real scenes) and fixed before commit.
+- `src/save/save-system.ts`: `computeActiveScenes` adds
+  `detectZoneOpeningCandidates` to the candidate pool. `resolveScene`'s solo
+  branch appends the zoneId to `celebratedZoneIds` in the same single write
+  when resolving a `zone_opening` intent (no new I/O).
+- `src/ui/island-scene.ts` / `resident-panel.ts`: added the `zone_opening`
+  bubble label and `"celebrate"` action label/branch (both were exhaustive
+  `Record`s that the compiler correctly flagged as incomplete once the new
+  scene/action existed - caught at `npm run build`, not silently missed).
+- Tests: `tests/zones.test.ts` +3 (`pendingZoneCelebrations`),
+  `tests/events.test.ts` +2 (`detectZoneOpeningCandidates`),
+  `tests/scene-texts.test.ts` +2 (zone text, celebrate resolution),
+  `tests/save-system.test.ts` +2 (full detect->resolve->no-repeat flow) plus
+  fixture updates for the new `celebratedZoneIds` field and the v5->v6 test
+  now migrating all the way to the current schema. **171 tests total,
+  project-wide.**
+- Validated end-to-end in the browser against real IndexedDB: added 2 temp
+  residents to cross the `clothes_shop` threshold (3 residents), confirmed
+  `computeActiveScenes` surfaced a `zone_opening` scene for the oldest
+  resident with text "Tienda de ropa has just opened!", resolved it and
+  confirmed mood 70->80, coins 50->55, `celebratedZoneIds` gained
+  `clothes_shop`, and the scene did not reappear on the next
+  `computeActiveScenes` call. Cleaned up temp residents afterward, restoring
+  the single-resident baseline save. Zero console errors throughout.
+- Model: Sonnet (construction on an already-closed design, matches AGENTS.md
+  rubric).
 
 ## Fase 1.2 — personalidad: sliders → tags/categoría/expresión
 - `src/core/personality-derived.ts`: proyecciones puras y deterministas de los 6 sliders

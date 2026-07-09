@@ -9,6 +9,7 @@ const SCENE_TYPE_ORDER: readonly SceneType[] = [
   "bored",
   "chat",
   "reconcile",
+  "zone_opening",
   "confess",
   "propose",
   "flirt",
@@ -30,6 +31,7 @@ const SCENE_SCORE_WEIGHT: Record<SceneType, number> = {
   bored: 0.6,
   chat: 0.65,
   reconcile: 0.7,
+  zone_opening: 0.6, // hito raro (F5.3): misma prioridad media que confess/propose
   confess: 0.6,
   propose: 0.6,
   flirt: 0.5,

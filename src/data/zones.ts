@@ -42,3 +42,19 @@ export function newlyUnlockedZones(
 ): ZoneId[] {
   return evaluateZoneUnlocks(residentCount).filter((id) => !alreadyUnlocked.includes(id));
 }
+
+/**
+ * Zonas desbloqueadas que aun no tuvieron su escena `zone_opening` resuelta
+ * (F5.3). Distinto de `newlyUnlockedZones`: esa mira el CRUCE de umbral en un
+ * instante; esta mira que celebraciones siguen pendientes en cualquier
+ * momento (el jugador pudo desbloquear una zona y cerrar la app antes de
+ * resolver la escena). `celebratedZoneIds` se persiste aparte de
+ * `unlockedZoneIds` porque el `sceneLog` (cap 20) no sirve para un disparador
+ * de una sola vez que debe sobrevivir a mucha actividad posterior.
+ */
+export function pendingZoneCelebrations(
+  unlockedZoneIds: readonly ZoneId[],
+  celebratedZoneIds: readonly ZoneId[],
+): ZoneId[] {
+  return unlockedZoneIds.filter((id) => !celebratedZoneIds.includes(id));
+}

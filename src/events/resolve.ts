@@ -8,7 +8,8 @@ export type SceneResolutionAction =
   | { kind: "rest" }
   | { kind: "play" }
   | { kind: "chat" }
-  | { kind: "observe" };
+  | { kind: "observe" }
+  | { kind: "celebrate" };
 
 // Solo las escenas "solo" (1 residente) resuelven por esta via. Las escenas
 // sociales (F4) resuelven aparte via resolve-social.ts + applyRelationshipAction:
@@ -21,6 +22,7 @@ const DEFAULT_ACTION_KIND_BY_SCENE: Record<NonFoodSoloSceneType, NonFoodActionKi
   bored: "play",
   lonely: "chat",
   quirk: "observe",
+  zone_opening: "celebrate",
 };
 
 const NEEDS_DELTA_BY_ACTION: Record<Exclude<SceneResolutionAction["kind"], "give_food">, NeedsDelta> = {
@@ -28,6 +30,7 @@ const NEEDS_DELTA_BY_ACTION: Record<Exclude<SceneResolutionAction["kind"], "give
   play: { boredom: -40, energy: -10, mood: 8 },
   chat: { social_need: -35, mood: 8 },
   observe: { mood: 4 },
+  celebrate: { mood: 10 },
 };
 
 export function defaultActionForScene(intent: SceneIntent): SceneResolutionAction | null {

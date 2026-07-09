@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { ZONE_CATALOG, evaluateZoneUnlocks, findZone, newlyUnlockedZones } from "@/data/zones";
+import {
+  ZONE_CATALOG,
+  evaluateZoneUnlocks,
+  findZone,
+  newlyUnlockedZones,
+  pendingZoneCelebrations,
+} from "@/data/zones";
 
 describe("ZONE_CATALOG", () => {
   it("has 5 zones with unique ids and residential always unlocked", () => {
@@ -41,5 +47,21 @@ describe("newlyUnlockedZones", () => {
 
   it("returns nothing when nothing new crosses the threshold", () => {
     expect(newlyUnlockedZones(2, ["residential", "food_shop"])).toEqual([]);
+  });
+});
+
+describe("pendingZoneCelebrations", () => {
+  it("returns unlocked zones that have not been celebrated yet", () => {
+    expect(pendingZoneCelebrations(["residential", "food_shop"], ["residential"])).toEqual([
+      "food_shop",
+    ]);
+  });
+
+  it("returns nothing when everything unlocked is already celebrated", () => {
+    expect(pendingZoneCelebrations(["residential"], ["residential"])).toEqual([]);
+  });
+
+  it("returns nothing when nothing is unlocked yet", () => {
+    expect(pendingZoneCelebrations([], [])).toEqual([]);
   });
 });

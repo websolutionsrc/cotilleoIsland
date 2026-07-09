@@ -17,6 +17,9 @@ export const SCENE_COOLDOWN_MS: Record<SceneType, number> = {
   flirt: 90 * MINUTE_MS,
   confess: 24 * 60 * MINUTE_MS,
   propose: 24 * 60 * MINUTE_MS,
+  // Red de seguridad, no el mecanismo principal: `pendingZoneCelebrations` (F5.3)
+  // ya evita generar la misma celebracion dos veces via `celebratedZoneIds`.
+  zone_opening: 24 * 60 * MINUTE_MS,
 };
 
 /** Compara el CONJUNTO de participantes (orden indiferente), no solo el primero. */

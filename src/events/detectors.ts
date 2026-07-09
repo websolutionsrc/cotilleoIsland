@@ -5,6 +5,7 @@ import {
 } from "@/core/needs";
 import type { Quirk } from "@/data/quirks";
 import { QUIRK_CATALOG } from "@/data/quirks";
+import { pendingZoneCelebrations, type ZoneId } from "@/data/zones";
 import {
   chemistry,
   CONFESS_CHEMISTRY_MIN,
@@ -132,6 +133,35 @@ export function detectSceneCandidates(
   }
 
   return candidates;
+}
+
+// --- Zona abierta (F5.3) -----------------------------------------------------
+//
+// A diferencia de las demas detectoras (por residente o por par), esta opera
+// sobre TODA la colonia: la celebracion es un hito de la isla, no de un
+// residente concreto. El "protagonista" es el residente mas antiguo, usando
+// el orden de insercion del array como proxy (ver zones.ts: no existe campo
+// de fecha de creacion y anadirlo solo para esto violaria YAGNI).
+const ZONE_OPENING_URGENCY = 60;
+
+export function detectZoneOpeningCandidates(
+  residents: readonly Resident[],
+  unlockedZoneIds: readonly ZoneId[],
+  celebratedZoneIds: readonly ZoneId[],
+  nowMs: number,
+): SceneIntent[] {
+  if (residents.length === 0) return [];
+  const pending = pendingZoneCelebrations(unlockedZoneIds, celebratedZoneIds);
+  if (pending.length === 0) return [];
+
+  const oldest = residents[0]!;
+  return pending.map((zoneId) => ({
+    sceneType: "zone_opening" as const,
+    participants: [oldest.id],
+    cause: { kind: "zone" as const, zoneId },
+    urgency: ZONE_OPENING_URGENCY,
+    createdAtMs: nowMs,
+  }));
 }
 
 // --- Escenas sociales (F4) --------------------------------------------------
