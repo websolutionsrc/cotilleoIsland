@@ -1,7 +1,7 @@
 import type { FoodEffect } from "@/core/needs";
 import { applyFoodEffect, normalizeNeeds, type NeedsDelta } from "@/core/needs";
 import type { Resident } from "@/core/resident";
-import type { SceneIntent, SceneType } from "./types";
+import { isSocialSceneType, type SceneIntent, type SoloSceneType } from "./types";
 
 export type SceneResolutionAction =
   | { kind: "give_food"; foodEffect: FoodEffect }
@@ -10,10 +10,13 @@ export type SceneResolutionAction =
   | { kind: "chat" }
   | { kind: "observe" };
 
-type NonFoodSceneType = Exclude<SceneType, "hungry">;
+// Solo las escenas "solo" (1 residente) resuelven por esta via. Las escenas
+// sociales (F4) resuelven aparte via resolve-social.ts + applyRelationshipAction:
+// afectan a needs de AMBOS participantes y a la relacion, no a SceneResolutionAction.
+type NonFoodSoloSceneType = Exclude<SoloSceneType, "hungry">;
 type NonFoodActionKind = Exclude<SceneResolutionAction["kind"], "give_food">;
 
-const DEFAULT_ACTION_KIND_BY_SCENE: Record<NonFoodSceneType, NonFoodActionKind> = {
+const DEFAULT_ACTION_KIND_BY_SCENE: Record<NonFoodSoloSceneType, NonFoodActionKind> = {
   tired: "rest",
   bored: "play",
   lonely: "chat",
@@ -28,7 +31,7 @@ const NEEDS_DELTA_BY_ACTION: Record<Exclude<SceneResolutionAction["kind"], "give
 };
 
 export function defaultActionForScene(intent: SceneIntent): SceneResolutionAction | null {
-  if (intent.sceneType === "hungry") return null;
+  if (intent.sceneType === "hungry" || isSocialSceneType(intent.sceneType)) return null;
   return { kind: DEFAULT_ACTION_KIND_BY_SCENE[intent.sceneType] };
 }
 
@@ -39,6 +42,9 @@ export function resolveSceneNeeds(
 ): Resident {
   if (resident.id !== intent.participants[0]) {
     throw new Error("Scene participant does not match resident");
+  }
+  if (isSocialSceneType(intent.sceneType)) {
+    throw new Error("Social scenes resolve via resolve-social.ts, not resolveSceneNeeds");
   }
 
   if (intent.sceneType === "hungry") {

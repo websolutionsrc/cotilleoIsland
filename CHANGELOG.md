@@ -2,6 +2,52 @@
 
 Formato: entradas por fase/hito. Fechas en `YYYY-MM-DD`.
 
+## [F4.3] - 2026-07-08
+
+### Added
+- 7 social scene types wired into the Event Engine: meet, chat, argument,
+  reconcile, flirt, confess, propose. `detectSocialSceneCandidates` (pure,
+  threshold-based, no RNG); `resolve-social.ts` (relationshipActionForScene
+  mapping + symmetric needs effects on both participants).
+- `SaveSystem.computeActiveScenes` now also scans every unique resident pair
+  for social candidates (not just per-resident). `resolveScene` resolves
+  social scenes deterministically (no player sub-choice), updating both
+  residents and the relationship in one write.
+- `sceneTextFor` gained an optional `counterpart` parameter for social scene
+  text (mentions both names; falls back to "someone" instead of failing).
+
+### Changed
+- `SceneType` split into `SoloSceneType | SocialSceneType` (explicit, not a
+  computed `Exclude`) so `resolve.ts`'s exhaustive action-kind mapping stays
+  scoped to solo scenes.
+- Cooldown matching upgraded from "same participants[0]" to "same
+  participant set" (order-independent), correctly blocking a specific pair.
+- `selectScenes`: a multi-participant candidate now competes for every one
+  of its participants' slots and is only chosen if it wins all of them -
+  otherwise dropped entirely (a resident can't be in two scenes at once).
+- `resolveScene`'s `action` parameter is now optional (ignored for social
+  scenes, still required - and enforced at runtime - for solo scenes).
+- Fixed a real bug found while wiring this: `save-state.ts`'s scene-log
+  validator only knew the 5 old scene types, so a resolved social scene's
+  log entry would have silently failed validation and vanished on next load.
+
+### Notes
+- confess/propose detection reuses the exact same threshold constants as the
+  status-machine transition guard, so an offered scene is guaranteed
+  resolvable.
+- Social scene score weights (argument 0.85, chat/reconcile 0.65-0.7,
+  confess/propose 0.6, flirt/meet 0.5) are an implementation decision not
+  fully pinned by the design doc.
+
+### Validation
+- +16 tests in `tests/social-scenes.test.ts`, +3 in `tests/save-system.test.ts`,
+  +3 in `tests/scene-texts.test.ts`. 136 tests total, green. `npm run build`
+  green. Phaser coupling boundary clean, zero control-byte artifacts.
+- Live preview end-to-end against the real SaveSystem/IndexedDB running the
+  full pipeline: detected "meet" for two fresh strangers, resolved it,
+  confirmed both residents' mood updated and the relationship transitioned
+  strangers -> acquaintances. Zero console errors.
+
 ## [F4.2] - 2026-07-08
 
 ### Added

@@ -21,12 +21,22 @@ const STAGE_CENTER_X = 480;
 const STAGE_AVATAR_Y = 258;
 const SCENE_BUBBLE_OFFSET_Y = -176;
 
+// Placeholder de texto hasta que F4.4/la libreria de arte conecten los 8
+// iconos reales de escena (art_library.md sec. 9); social scenes usan labels
+// distintos de sus equivalentes "solo" (p.ej. chat vs lonely) para no confundir.
 const SCENE_ICONS: Record<SceneType, string> = {
   hungry: "Food",
   tired: "Rest",
   bored: "Play",
   lonely: "Chat",
   quirk: "Quirk",
+  meet: "Meet",
+  chat: "Talk",
+  argument: "Argue",
+  reconcile: "Makeup",
+  flirt: "Flirt",
+  confess: "Confess",
+  propose: "Propose",
 };
 
 /**

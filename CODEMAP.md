@@ -47,7 +47,7 @@ Design in `docs/engine_design_f3-f5.md` section 3. Branch `develop/f4-relationsh
 |---|---|---|
 | F4.1 | Pure core: types, key normalization, chemistry, status machine, decay, applyRelationshipAction | **DONE** |
 | F4.2 | SaveState v5 (`relationships[]`) + migration v4->v5 + SaveSystem wiring | **DONE** |
-| F4.3 | Social scene types (meet/chat/argument/reconcile/flirt/confess/propose) + detectors + scene texts + resolution effects on both participants | pending |
+| F4.3 | Social scene types (meet/chat/argument/reconcile/flirt/confess/propose) + detectors + scene texts + resolution effects on both participants | **DONE** |
 | F4.4 | UI - scope open, see note below | pending |
 
 - `src/relationships/types.ts`: `Relationship` (persisted fields: a/b ordered pair,
@@ -105,6 +105,74 @@ Design in `docs/engine_design_f3-f5.md` section 3. Branch `develop/f4-relationsh
   (IndexedDB): default relationship is "strangers", `resolveRelationshipAction(...,
   "meet", ...)` promotes to "acquaintances" with friendship=5 and a real
   `lastInteractionAtMs`, `schemaVersion` reads back as 5. Zero console errors.
+
+## Fase 4.3 - social scenes
+Wired the 7 social sceneTypes into the generic Event Engine. The pipeline
+(detect->cooldown->score->select->resolve) is reused unchanged; only the taxonomy and
+a few functions grew.
+
+- `src/events/types.ts`: `SceneType` split into `SoloSceneType | SocialSceneType`
+  (explicit union, not a computed `Exclude`) so `resolve.ts`'s exhaustive
+  `Record<..., ActionKind>` doesn't silently need every new social type. New
+  `SceneCause` variant `{ kind: "social" }`. `isSocialSceneType` type guard exported
+  as the single source of truth other modules narrow against.
+- `src/events/detectors.ts`: new `detectSocialSceneCandidates(a, b, relationship,
+  nowMs)` - pure, no RNG (unlike quirks, all social triggers are threshold-based).
+  Detection thresholds are implementation decisions (design doc only fixed
+  argument>=60 and flirt>=60): `chat` avg social_need>=55, `reconcile` avg
+  kindness>=50, `meet`/`reconcile`/`confess`/`propose` use fixed urgency. **confess/
+  propose reuse the exact same threshold constants as the status-machine transition
+  guard** (`status.ts`) - if a scene is offered, resolving it is guaranteed to cross
+  the guard, since `applyRelationshipAction`'s deltas only add before re-checking.
+- `src/events/cooldowns.ts`: cooldown matching upgraded from "same participants[0]"
+  to "same participant SET" (order-independent) so a 2-participant cooldown entry
+  correctly blocks re-triggering that specific pair.
+- `src/events/select.ts`: `selectScenes` rewritten so a multi-participant candidate
+  competes for EVERY one of its participants' slots and is only selected if it wins
+  ALL of them - otherwise dropped entirely (a resident can't "meet" someone while
+  busy with a more urgent personal need). New score weights for social types
+  (implementation decision, undocumented in the design doc beyond the two fixed
+  thresholds): argument 0.85 (surfaces like a real conflict), chat/reconcile
+  0.65-0.7, confess/propose 0.6, flirt/meet 0.5 (flavor, never outranks a real need).
+- `src/events/resolve-social.ts` (new): `relationshipActionForScene` (explicit 1:1
+  map, not a cast, so TS catches drift) and `resolveSocialSceneNeeds` (symmetric
+  needs delta on BOTH participants, separate from the relationship-side effect).
+- `src/dialogue/scene-texts.ts`: `sceneTextFor` gained an optional `counterpart`
+  parameter; social scenes use `(name, name) -> string` generators instead of the
+  static per-type table solo scenes use (two dynamic names don't fit a plain
+  string constant). Falls back to "someone" if the counterpart is missing rather
+  than throwing (invariant #9: text render is always total).
+- `src/save/save-state.ts`: the `sceneLog` entry validator's known-scene-types list
+  now includes the 7 social types (was a real bug risk: without this, a resolved
+  social scene's log entry would silently fail validation and vanish on the very
+  next load).
+- `src/save/save-system.ts`: `computeActiveScenes` now also generates candidates for
+  every unique resident PAIR (not just per-resident), looking up each pair's
+  relationship (default "strangers" if absent). `resolveScene`'s `action` parameter
+  became optional: social scenes ignore it (they resolve deterministically via the
+  sceneType->RelationshipAction mapping, no player sub-choice) and update both
+  residents + the relationship in the same single write (invariant #5); solo scenes
+  now throw a clear error if resolved without an action (previously implicitly
+  required by the type system, now enforced at runtime too since the type is optional).
+- UI minimal type-safety fixes (not real F4.4 work): `island-scene.ts`'s
+  `SCENE_ICONS` and `resident-panel.ts`'s action switch needed entries/a default
+  case for the new `SceneType` members to keep compiling; social scenes currently
+  render a placeholder label and a disabled resolve button in the generic panel -
+  F4.4 will give them a real flow.
+- Tests: `tests/social-scenes.test.ts` (new, 16 tests: every detector trigger/guard,
+  the relationshipAction mapping, symmetric needs effect, cooldown set-matching, and
+  the select.ts multi-participant consistency filter - including the critical case
+  where a social scene must be dropped entirely because one participant has a
+  better personal scene). +3 in `tests/save-system.test.ts` (pairwise
+  `computeActiveScenes`, full social `resolveScene` end-to-end, error paths). +3 in
+  `tests/scene-texts.test.ts` (social text mentions both names, generic fallback,
+  distinct text per social type). **136 tests total, project-wide.**
+- Validated end-to-end in the browser preview against the real SaveSystem/IndexedDB
+  running the FULL pipeline (not just `resolveRelationshipAction` directly, as in
+  F4.2's check): `computeActiveScenes` correctly detected "meet" for two fresh
+  strangers, `resolveScene` updated both residents' mood (70->73) and the
+  relationship (strangers->acquaintances, friendship=5) in one write. Zero console
+  errors.
 
 ### F4.4 scope decision (resolved 2026-07-08)
 The game currently only ever shows/edits a single resident (`main.ts` uses

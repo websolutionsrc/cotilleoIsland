@@ -3,8 +3,12 @@ import type { ResidentId } from "@/core/ids";
 import { decayNeeds } from "@/core/needs";
 import {
   detectSceneCandidates,
+  detectSocialSceneCandidates,
+  isSocialSceneType,
   mulberry32,
+  relationshipActionForScene,
   resolveSceneNeeds,
+  resolveSocialSceneNeeds,
   seedForResidentDay,
   selectScenes,
   type SceneIntent,
@@ -29,6 +33,17 @@ import {
 
 /** Clave bajo la que se guarda el `SaveState` completo en el storage. */
 export const SAVE_STATE_KEY = "cotilleo:save-state";
+
+/** Pares unicos (sin repetir, sin invertidos) de una lista de residentes. */
+function residentPairs(residents: readonly Resident[]): Array<[Resident, Resident]> {
+  const pairs: Array<[Resident, Resident]> = [];
+  for (let i = 0; i < residents.length; i++) {
+    for (let j = i + 1; j < residents.length; j++) {
+      pairs.push([residents[i]!, residents[j]!]);
+    }
+  }
+  return pairs;
+}
 
 /**
  * Fachada de persistencia del juego. No conoce IndexedDB ni localForage
@@ -170,23 +185,77 @@ export class SaveSystem {
     return next;
   }
 
+  /**
+   * Candidatas "solo" (por residente) + sociales (por par, F4): mismo pipeline
+   * detect->cooldown->score->select, la lista de detectores simplemente creció.
+   */
   async computeActiveScenes(nowMs = this.nowMs(), seed?: number): Promise<SceneIntent[]> {
     const state = await this.loadState();
-    const candidates = state.residents.flatMap((resident, index) => {
+    const soloCandidates = state.residents.flatMap((resident, index) => {
       const sceneSeed = seed === undefined ? seedForResidentDay(resident.id, nowMs) : seed + index;
       return detectSceneCandidates(resident, nowMs, {
         rng: mulberry32(sceneSeed),
       });
     });
-    return selectScenes(candidates, { sceneLog: state.sceneLog, nowMs });
+    const socialCandidates = residentPairs(state.residents).flatMap(([a, b]) => {
+      const relationship = getRelationship(state.relationships, a.id, b.id);
+      return detectSocialSceneCandidates(a, b, relationship, nowMs);
+    });
+    return selectScenes([...soloCandidates, ...socialCandidates], { sceneLog: state.sceneLog, nowMs });
   }
 
+  /**
+   * Resuelve una escena y persiste en una sola escritura (invariante #5).
+   * `action` es obligatoria para escenas "solo" (elige como se resuelve);
+   * las escenas sociales (F4) se ignoran porque resuelven de forma
+   * determinista via el mapeo 1:1 sceneType->RelationshipAction - no hay
+   * eleccion del jugador mas alla de "resolver".
+   */
   async resolveScene(
     intent: SceneIntent,
-    action: SceneResolutionAction,
+    action?: SceneResolutionAction,
     nowMs = this.nowMs(),
   ): Promise<SaveState> {
     const state = await this.loadState();
+
+    if (isSocialSceneType(intent.sceneType)) {
+      const [residentAId, residentBId] = intent.participants;
+      const residentA = state.residents.find((candidate) => candidate.id === residentAId);
+      const residentB = state.residents.find((candidate) => candidate.id === residentBId);
+      if (!residentA || !residentB) {
+        throw new Error("Cannot resolve social scene for missing resident(s)");
+      }
+
+      const { a: updatedA, b: updatedB } = resolveSocialSceneNeeds(residentA, residentB, intent.sceneType);
+      const currentRelationship = getRelationship(state.relationships, residentA.id, residentB.id);
+      const updatedRelationship = applyRelationshipAction(
+        currentRelationship,
+        relationshipActionForScene(intent.sceneType),
+        { a: updatedA.personality, b: updatedB.personality },
+        nowMs,
+      );
+
+      const next: SaveState = {
+        ...state,
+        residents: state.residents.map((candidate) => {
+          if (candidate.id === updatedA.id) return updatedA;
+          if (candidate.id === updatedB.id) return updatedB;
+          return candidate;
+        }),
+        relationships: upsertRelationship(state.relationships, updatedRelationship),
+        sceneLog: [
+          ...state.sceneLog,
+          { sceneType: intent.sceneType, participants: intent.participants, atMs: nowMs },
+        ].slice(-SCENE_LOG_CAP),
+        stats: { scenesResolved: state.stats.scenesResolved + 1 },
+      };
+      await this.persistState(next);
+      return next;
+    }
+
+    if (!action) {
+      throw new Error(`Scene ${intent.sceneType} requires a SceneResolutionAction`);
+    }
     const residentId = intent.participants[0];
     const resident = state.residents.find((candidate) => candidate.id === residentId);
     if (!resident) {

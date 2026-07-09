@@ -2,7 +2,13 @@ import type { Resident } from "@/core/resident";
 import type { ResidentId } from "@/core/ids";
 import { DEFAULT_PERSONALITY, type Personality } from "@/core/personality";
 import { normalizeNeeds, type Needs } from "@/core/needs";
-import { SCENE_LOG_CAP, type SceneLogEntry, type SceneStats, type SceneType } from "@/events/types";
+import {
+  SCENE_LOG_CAP,
+  SOCIAL_SCENE_TYPES,
+  type SceneLogEntry,
+  type SceneStats,
+  type SceneType,
+} from "@/events/types";
 import { orderedPair, type Relationship, type RelationshipStatus } from "@/relationships";
 
 /** Versión actual del esquema de guardado. Incrementar al cambiar la forma de `SaveState`. */
@@ -34,7 +40,14 @@ export function createEmptySaveState(): SaveState {
 /** Forma mínima y flexible de un guardado de esquema desconocido/antiguo. */
 export type UnknownSaveState = Record<string, unknown>;
 
-const SCENE_TYPES: readonly SceneType[] = ["hungry", "tired", "bored", "lonely", "quirk"];
+const SCENE_TYPES: readonly SceneType[] = [
+  "hungry",
+  "tired",
+  "bored",
+  "lonely",
+  "quirk",
+  ...SOCIAL_SCENE_TYPES,
+];
 
 function isSceneType(value: unknown): value is SceneType {
   return typeof value === "string" && SCENE_TYPES.includes(value as SceneType);

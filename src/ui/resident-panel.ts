@@ -169,6 +169,10 @@ export function mountResidentPanel(options: ResidentPanelOptions): ResidentPanel
         return { kind: "chat" };
       case "quirk":
         return { kind: "observe" };
+      default:
+        // Escenas sociales (F4): resuelven de forma determinista sin elegir
+        // SceneResolutionAction; F4.4 les dara su propio boton/flujo de UI.
+        return null;
     }
   }
 

@@ -379,3 +379,76 @@ describe("SaveSystem scenes", () => {
     expect(next.sceneLog[19]?.sceneType).toBe("hungry");
   });
 });
+
+describe("SaveSystem social scenes (F4.3)", () => {
+  it("computeActiveScenes detects a meet scene for two fresh (stranger) residents", async () => {
+    const storage = new InMemoryStorage();
+    const saveSystem = new SaveSystem(storage, () => 1000);
+    const a = createResident({ name: "Lina", needs: { hunger: 20 } });
+    const b = createResident({ name: "Nico", needs: { hunger: 20 } });
+    await saveSystem.saveResident(a);
+    await saveSystem.saveResident(b);
+
+    const scenes = await saveSystem.computeActiveScenes(1000, 123);
+
+    expect(scenes).toHaveLength(1);
+    expect(scenes[0]?.sceneType).toBe("meet");
+    expect(scenes[0]?.participants.sort()).toEqual([a.id, b.id].sort());
+  });
+
+  it("resolveScene on a social intent updates both residents' needs and the relationship in one write", async () => {
+    const storage = new CountingStorage();
+    const saveSystem = new SaveSystem(storage, () => 1000);
+    const a = createResident({ name: "Lina", needs: { mood: 50 } });
+    const b = createResident({ name: "Nico", needs: { mood: 50 } });
+    await saveSystem.saveResident(a);
+    await saveSystem.saveResident(b);
+    const [scene] = await saveSystem.computeActiveScenes(1000, 123);
+    expect(scene?.sceneType).toBe("meet");
+    storage.setCalls = 0;
+
+    const next = await saveSystem.resolveScene(scene!);
+
+    const updatedA = next.residents.find((r) => r.id === a.id);
+    const updatedB = next.residents.find((r) => r.id === b.id);
+    expect(updatedA?.needs.mood).toBe(53); // meet: +3 mood, both sides
+    expect(updatedB?.needs.mood).toBe(53);
+
+    expect(next.relationships).toHaveLength(1);
+    expect(next.relationships[0]?.status).toBe("acquaintances");
+    expect(next.relationships[0]?.friendship).toBe(5);
+
+    expect(next.sceneLog).toEqual([
+      { sceneType: "meet", participants: scene!.participants, atMs: 1000 },
+    ]);
+    expect(next.stats.scenesResolved).toBe(1);
+    expect(storage.setCalls).toBe(1);
+  });
+
+  it("resolveScene throws for a missing resident in a social intent", async () => {
+    const storage = new InMemoryStorage();
+    const saveSystem = new SaveSystem(storage, () => 1000);
+    const a = createResident({ name: "Lina" });
+    await saveSystem.saveResident(a);
+
+    const fakeIntent = {
+      sceneType: "meet" as const,
+      participants: [a.id, "resident_ghost" as typeof a.id],
+      cause: { kind: "social" as const },
+      urgency: 30,
+      createdAtMs: 1000,
+    };
+
+    await expect(saveSystem.resolveScene(fakeIntent)).rejects.toThrow(/missing resident/);
+  });
+
+  it("resolveScene throws when a solo scene is resolved without an action", async () => {
+    const storage = new InMemoryStorage();
+    const saveSystem = new SaveSystem(storage, () => 1000);
+    const resident = createResident({ name: "Lina", needs: { hunger: 90 } });
+    await saveSystem.saveResident(resident);
+    const [scene] = await saveSystem.computeActiveScenes(1000, 123);
+
+    await expect(saveSystem.resolveScene(scene!)).rejects.toThrow(/requires a SceneResolutionAction/);
+  });
+});

@@ -60,6 +60,53 @@ describe("sceneTextFor", () => {
   });
 });
 
+describe("sceneTextFor for social scenes", () => {
+  const RESIDENT_B_ID = "resident-2" as ResidentId;
+
+  it("mentions both residents by name when a counterpart is given", () => {
+    const a = createResident({ id: RESIDENT_ID, name: "Lina" });
+    const b = createResident({ id: RESIDENT_B_ID, name: "Nico" });
+    const socialIntent = intent({
+      sceneType: "meet",
+      participants: [RESIDENT_ID, RESIDENT_B_ID],
+      cause: { kind: "social" },
+    });
+
+    const text = sceneTextFor(socialIntent, a, b);
+    expect(text).toContain("Lina");
+    expect(text).toContain("Nico");
+  });
+
+  it("falls back to a generic counterpart name instead of failing (total render invariant)", () => {
+    const a = createResident({ id: RESIDENT_ID, name: "Lina" });
+    const socialIntent = intent({
+      sceneType: "confess",
+      participants: [RESIDENT_ID, RESIDENT_B_ID],
+      cause: { kind: "social" },
+    });
+
+    expect(() => sceneTextFor(socialIntent, a)).not.toThrow();
+    expect(sceneTextFor(socialIntent, a).length).toBeGreaterThan(0);
+  });
+
+  it("produces distinct, non-empty text for every social sceneType", () => {
+    const a = createResident({ id: RESIDENT_ID, name: "Lina" });
+    const b = createResident({ id: RESIDENT_B_ID, name: "Nico" });
+    const socialTypes = ["meet", "chat", "argument", "reconcile", "flirt", "confess", "propose"] as const;
+
+    const texts = socialTypes.map((sceneType) =>
+      sceneTextFor(
+        intent({ sceneType, participants: [RESIDENT_ID, RESIDENT_B_ID], cause: { kind: "social" } }),
+        a,
+        b,
+      ),
+    );
+
+    for (const text of texts) expect(text.length).toBeGreaterThan(0);
+    expect(new Set(texts).size).toBe(socialTypes.length);
+  });
+});
+
 describe("resolveSceneNeeds", () => {
   it("applies non-food scene effects with clamping", () => {
     const resident = createResident({

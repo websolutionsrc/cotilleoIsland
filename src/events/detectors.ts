@@ -5,8 +5,16 @@ import {
 } from "@/core/needs";
 import type { Quirk } from "@/data/quirks";
 import { QUIRK_CATALOG } from "@/data/quirks";
+import {
+  chemistry,
+  CONFESS_CHEMISTRY_MIN,
+  CONFESS_FRIENDSHIP_MIN,
+  PROPOSE_CHEMISTRY_MIN,
+  PROPOSE_FRIENDSHIP_MIN,
+  type Relationship,
+} from "@/relationships";
 import type { RandomSource } from "./rng";
-import type { SceneIntent } from "./types";
+import type { SceneIntent, SocialSceneType } from "./types";
 
 const NEED_SCENE_THRESHOLD = 65;
 const LOW_ENERGY_THRESHOLD = 30;
@@ -120,6 +128,106 @@ export function detectSceneCandidates(
         urgency: QUIRK_URGENCY,
         createdAtMs: nowMs,
       });
+    }
+  }
+
+  return candidates;
+}
+
+// --- Escenas sociales (F4) --------------------------------------------------
+//
+// Umbrales de deteccion no fijados por engine_design_f3-f5.md #3.4 mas alla de
+// los ejemplos citados (argument>=60, flirt>=60); el resto son decisiones de
+// implementacion, documentadas aqui. confess/propose REUSAN exactamente las
+// mismas constantes que la guarda de transicion en status.ts: si la escena se
+// detecta, resolverla garantiza cruzar la guarda (los deltas de
+// applyRelationshipAction solo suman, nunca restan, antes de comprobarla).
+const CHAT_SOCIAL_NEED_THRESHOLD = 55;
+const ARGUMENT_TENSION_THRESHOLD = 60;
+const RECONCILE_KINDNESS_THRESHOLD = 50;
+const FLIRT_CHEMISTRY_THRESHOLD = 60;
+
+const MEET_URGENCY = 30;
+const RECONCILE_URGENCY = 55;
+const CONFESS_URGENCY = 65;
+const PROPOSE_URGENCY = 70;
+
+function makeSocialIntent(
+  a: Resident,
+  b: Resident,
+  sceneType: SocialSceneType,
+  urgency: number,
+  nowMs: number,
+): SceneIntent {
+  return {
+    sceneType,
+    participants: [a.id, b.id],
+    cause: { kind: "social" },
+    urgency,
+    createdAtMs: nowMs,
+  };
+}
+
+/**
+ * Detecta candidatas sociales (2 participantes) para un par de residentes.
+ * Pura, sin RNG (a diferencia de los quirks, estos disparadores son siempre
+ * por umbral). El orden de `a`/`b` no importa para el resultado (las
+ * condiciones son simetricas); `participants` conserva el orden recibido.
+ */
+export function detectSocialSceneCandidates(
+  a: Resident,
+  b: Resident,
+  relationship: Relationship,
+  nowMs: number,
+): SceneIntent[] {
+  const candidates: SceneIntent[] = [];
+  const { status } = relationship;
+
+  if (status === "strangers") {
+    candidates.push(makeSocialIntent(a, b, "meet", MEET_URGENCY, nowMs));
+  }
+
+  if (status === "acquaintances" || status === "friends" || status === "besties") {
+    const avgSocialNeed = (a.needs.social_need + b.needs.social_need) / 2;
+    if (avgSocialNeed >= CHAT_SOCIAL_NEED_THRESHOLD) {
+      candidates.push(makeSocialIntent(a, b, "chat", avgSocialNeed, nowMs));
+    }
+  }
+
+  if (
+    (status === "friends" || status === "besties" || status === "dating" || status === "partners") &&
+    relationship.tension >= ARGUMENT_TENSION_THRESHOLD
+  ) {
+    candidates.push(makeSocialIntent(a, b, "argument", relationship.tension, nowMs));
+  }
+
+  if (status === "fighting") {
+    const avgKindness = (a.personality.kindness + b.personality.kindness) / 2;
+    if (avgKindness >= RECONCILE_KINDNESS_THRESHOLD) {
+      candidates.push(makeSocialIntent(a, b, "reconcile", RECONCILE_URGENCY, nowMs));
+    }
+  }
+
+  if (status === "friends" || status === "besties") {
+    const chemistryValue = chemistry(a.personality, b.personality, relationship);
+    if (chemistryValue >= FLIRT_CHEMISTRY_THRESHOLD) {
+      candidates.push(makeSocialIntent(a, b, "flirt", chemistryValue, nowMs));
+    }
+    if (
+      relationship.friendship >= CONFESS_FRIENDSHIP_MIN &&
+      chemistryValue >= CONFESS_CHEMISTRY_MIN
+    ) {
+      candidates.push(makeSocialIntent(a, b, "confess", CONFESS_URGENCY, nowMs));
+    }
+  }
+
+  if (status === "dating") {
+    const chemistryValue = chemistry(a.personality, b.personality, relationship);
+    if (
+      relationship.friendship >= PROPOSE_FRIENDSHIP_MIN &&
+      chemistryValue >= PROPOSE_CHEMISTRY_MIN
+    ) {
+      candidates.push(makeSocialIntent(a, b, "propose", PROPOSE_URGENCY, nowMs));
     }
   }
 
