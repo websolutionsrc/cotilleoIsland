@@ -30,13 +30,13 @@ Mapa de módulos previstos. Se rellena a medida que se implementan (Fase 1: sist
 |---|---|---|---|
 | **Core** | `src/core/` | Tipos base: `Resident`, `Personality`, `Needs`, `Avatar`, ids tipados (`ResidentId`); proyecciones puras de personalidad (`personality-derived.ts`); lógica pura de necesidades (`needs.ts`) | **Fase 2.1: core de necesidades implementado** (sin UI ni persistencia de F2 aún) |
 | **Residents** | `src/residents/` | `createResident`/`updateResident` (defaults + validación pura de nombre y personalidad) | **Fase 1: implementado** (sin inventario/nivel aún) |
-| **Relationships** | `src/relationships/` | `types/key/chemistry/status/decay/apply` — core puro: par normalizado `a<b`, `chemistry` (proyección pura), máquina de estados con guardas, decaimiento, `applyRelationshipAction` (deltas+status en un punto) | **F4.1 done** (27 tests); F4.2 (persistencia)/F4.3 (escenas sociales)/F4.4 (UI) pendientes — diseño cerrado en `engine_design_f3-f5.md` §3 |
-| **Events** | `src/events/` | `types/rng/detectors/cooldowns/select/resolve` — pipeline puro detect→cooldown→score→select, `SceneIntent` efímera, `sceneLog` cap 20 | **F3.1-F3.3 implemented; F3.4 UI pending** |
-| **Dialogue** | `src/dialogue/` | V1: plantillas (`food-reactions.ts` ahora; `scene-texts.ts` en F3.3); V2: IA (`DialogueGenerator`) | **F3.3 scene text templates implemented** |
-| **AI** (opcional) | `src/ai/` | DialogueEnhancer, DailyNarrator, MemorySummarizer, CatchphraseGenerator, EventSuggestor validado | pendiente |
-| **Save** | `src/save/` | `StoragePort` (`IndexedDbStorage` / `InMemoryStorage`) + `SaveSystem` (CRUD de residentes, `SaveState` versionado, migración, decaimiento de necesidades al cargar, escenas activas F3) | **F3.2 internal scene persistence implemented** |
-| **UI** | `src/ui/` | `IslandScene` (Phaser, placeholder de residente "en su casa") + `resident-panel` (overlay DOM: crear/editar nombre, personalidad, dar comida y mostrar reacción) | **Fase 2.5: vertical de hambre/comida implementado** |
-| **Data** | `src/data/` | Catálogo de comidas (`foods.json`) + validación/exports (`foods.ts`), quirks (`quirks.ts`); después residentes mock, eventos y plantillas | **F3.3 quirks implemented** |
+| **Relationships** | `src/relationships/` | `types/key/chemistry/status/decay/apply` — core puro: par normalizado `a<b`, `chemistry` (proyección pura), máquina de estados con guardas, decaimiento, `applyRelationshipAction` (deltas+status en un punto) | **F4 fully DONE (F4.1-F4.4), tagged v01.00.F4** |
+| **Events** | `src/events/` | `types/rng/detectors/cooldowns/select/resolve/resolve-social/reward` — pipeline puro detect→cooldown→score→select, `SceneIntent` efímera (solo + social), `sceneLog` cap 20, recompensa de monedas (F5.1) | **F3+F4 DONE; F5.1 reward.ts added, F5.2 SaveSystem wiring pending** |
+| **Dialogue** | `src/dialogue/` | V1: plantillas (`food-reactions.ts`, `scene-texts.ts` solo+social); V2: IA (`DialogueGenerator`) | **DONE for F3+F4 scene types** |
+| **AI** (opcional) | `src/ai/` | DialogueEnhancer, DailyNarrator, MemorySummarizer, CatchphraseGenerator, EventSuggestor validado | pendiente (F6) |
+| **Save** | `src/save/` | `StoragePort` (`IndexedDbStorage` / `InMemoryStorage`) + `SaveSystem` (CRUD de residentes, `SaveState` v5 versionado, migración, decaimiento de mundo, escenas F3+F4) | **v5 DONE; v6 (wallet/zones/pantry) pending F5.2** |
+| **UI** | `src/ui/` | `IslandScene` (Phaser) + `resident-panel` (overlay DOM: crear/editar residente, multi-residente, personalidad, comida, escenas solo+sociales) | **F4.4 DONE; F5.4 shop/wallet UI pending** |
+| **Data** | `src/data/` | Catálogo de comidas (`foods.json`, ahora con `price`) + validación (`foods.ts`), quirks (`quirks.ts`), zonas (`zones.ts`, F5.1) | **F5.1 zones.ts added** |
 | **Visual direction** | `docs/art_library.md` + `docs/art/references/` + future `public/art/` | 2D art library: characters, outfits, environments, scene language, asset export rules and delegation guidelines so other models can produce visual work without touching the core | **F2.6 art library DONE (ADR 0006, Direction B "Storybook with volume"); pilot asset pass pending before mass batches** |
 
 ## Fase 4 - Relationships (F4.1 done; F4.2-F4.4 pending)
@@ -212,6 +212,48 @@ seeded `SaveSystem` calls.
   became `acquaintances`/friendship=5 and both residents' mood went 70->73, and the
   scene box correctly cleared afterward. Zero console errors throughout.
 - **F4 (Relationships) is now fully closed: F4.1-F4.4 all DONE.**
+
+## Fase 5 - Isla/progreso (F5.1 done)
+Design in `docs/engine_design_f3-f5.md` section 4. Branch `develop/f5-island-progress`
+(from `v01.00.F4`; note: `main` has not been merged since Fase 1.2 - every phase has
+lived in its own feature branch with a closing tag, `main` was never used as an
+integration branch in practice. Flagged as housekeeping, not blocking). No F5.1-F5.x
+table existed in the design doc (only F3 had one); defined here mirroring F3/F4's
+pattern:
+
+| Subfase | Content | Status |
+|---|---|---|
+| F5.1 | Pure core: zone catalog + unlock evaluation, reward calculation, pantry helpers, food prices | **DONE** |
+| F5.2 | `SaveState` v6 (`wallet`/`unlockedZoneIds`/`pantry`) + migration v5->v6 + `SaveSystem` wiring | pending |
+| F5.3 | `zone_opening` scene (new solo `SceneType`, protagonist = oldest resident) | pending |
+| F5.4 | UI: buy food with coins, pantry-gated giving, wallet display, zone celebration, reward feedback | pending |
+
+- `src/data/zones.ts`: `ZONE_CATALOG` (5 fixed zones: `residential` always,
+  `food_shop`>=1 resident, `clothes_shop`>=3, `plaza`>=5, `workshop`>=8 - same flat
+  TS-const pattern as `quirks.ts`, no JSON/validator split since it's not meant to be
+  edited outside code). `evaluateZoneUnlocks(residentCount)` (pure, all zones that
+  SHOULD be unlocked) and `newlyUnlockedZones(residentCount, alreadyUnlocked)` (pure,
+  only the ones crossed for the first time) - the latter is what F5.2/F5.3 will call
+  to decide when to fire the `zone_opening` celebration. Design doc allows unlock
+  conditions to also use `stats.scenesResolved`; not used yet since none of the 5 V1
+  zones need it (YAGNI - a 6th field can be added when a real zone needs it).
+- `src/events/reward.ts`: `coinsForScene(intent)` - 5 coins base, 10 if the scene
+  "ignores cooldown" (reuses `cooldowns.ts`'s `ignoresCooldown`, today only true for
+  urgent hunger - the ONE existing definition of "urgent" in the engine, per
+  invariant #8; reusing it instead of inventing a parallel concept). Interpreted the
+  design doc's "+5 coins (+10 si era urgente)" as 10 total when urgent, not 5+10.
+- `src/core/pantry.ts`: `PantryEntry{itemId,qty}` + pure `pantryQuantity`/
+  `addToPantry`/`removeFromPantry` (clamps at 0, drops the entry rather than leaving
+  a zero row).
+- `src/data/foods.ts`/`foods.json`: `FoodItem` gained a required `price` field
+  (validated: non-negative integer); prices set roughly proportional to hunger
+  effect (5-18 coins), within a few resolved scenes' worth of coins (5-10/scene) -
+  keeps the buy loop paced for a casual game, not grindy.
+- Tests: `tests/zones.test.ts` (5), `tests/pantry.test.ts` (8), `tests/reward.test.ts`
+  (4), +2 in `tests/foods.test.ts` (price presence + validation). **154 tests total,
+  project-wide.** All pure logic - no save/UI/events-pipeline wiring yet, so no live
+  preview check for this subfase (nothing observable changed in the running app).
+- Model: Sonnet (construction on an already-closed design, matches AGENTS.md rubric).
 
 ## Fase 1.2 — personalidad: sliders → tags/categoría/expresión
 - `src/core/personality-derived.ts`: proyecciones puras y deterministas de los 6 sliders

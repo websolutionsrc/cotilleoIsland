@@ -9,6 +9,8 @@ export interface FoodItem extends FoodEffect {
   id: string;
   name: string;
   category: FoodCategory;
+  /** Coste en monedas (F5): la comida deja de ser gratis, se compra a la despensa. */
+  price: number;
 }
 
 export type FoodCatalogValidationResult =
@@ -74,7 +76,7 @@ export function validateFoodCatalog(input: unknown): FoodCatalogValidationResult
       return;
     }
 
-    const { id, name, category, needsDelta } = rawItem;
+    const { id, name, category, needsDelta, price } = rawItem;
     if (typeof id !== "string" || id.trim().length === 0) {
       errors.push(`${path}.id debe ser texto no vacío`);
       return;
@@ -94,6 +96,11 @@ export function validateFoodCatalog(input: unknown): FoodCatalogValidationResult
       return;
     }
 
+    if (typeof price !== "number" || !Number.isFinite(price) || !Number.isInteger(price) || price < 0) {
+      errors.push(`${path}.price debe ser un entero >= 0`);
+      return;
+    }
+
     const validatedDelta = validateNeedsDelta(needsDelta, path, errors);
     if (validatedDelta === null) return;
 
@@ -101,6 +108,7 @@ export function validateFoodCatalog(input: unknown): FoodCatalogValidationResult
       id,
       name,
       category,
+      price,
       needsDelta: validatedDelta,
     });
   });

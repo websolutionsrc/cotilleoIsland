@@ -2,6 +2,24 @@
 
 Formato: entradas por fase/hito. Fechas en `YYYY-MM-DD`.
 
+## [F5.1] - 2026-07-09
+
+### Added
+- `src/data/zones.ts`: fixed 5-zone catalog + pure `evaluateZoneUnlocks`/
+  `newlyUnlockedZones` (unlock gated on resident count).
+- `src/events/reward.ts`: `coinsForScene` (5 base, 10 if urgent - reuses the
+  existing `ignoresCooldown` concept instead of inventing a new one).
+- `src/core/pantry.ts`: pure pantry helpers (`pantryQuantity`/`addToPantry`/
+  `removeFromPantry`).
+- `FoodItem` gained a required `price` field (validated); `foods.json` prices
+  set proportional to effect, 5-18 coins.
+
+### Validation
+- +19 tests (`zones.test.ts`, `pantry.test.ts`, `reward.test.ts`, +2 in
+  `foods.test.ts`). 154 tests total, green. `npm run build` green. Phaser
+  coupling boundary clean, zero control-byte artifacts. Pure logic only -
+  no live preview check needed (nothing observable changed yet).
+
 ## [F4.4] - 2026-07-09
 
 ### Added

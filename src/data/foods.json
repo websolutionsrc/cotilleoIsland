@@ -3,36 +3,42 @@
     "id": "food_tortilla",
     "name": "Pincho de tortilla",
     "category": "meal",
+    "price": 15,
     "needsDelta": { "hunger": -45, "mood": 6, "energy": 4 }
   },
   {
     "id": "food_gazpacho",
     "name": "Gazpacho frío",
     "category": "meal",
+    "price": 10,
     "needsDelta": { "hunger": -30, "mood": 4, "energy": 2 }
   },
   {
     "id": "food_apple",
     "name": "Manzana crujiente",
     "category": "snack",
+    "price": 5,
     "needsDelta": { "hunger": -18, "mood": 2 }
   },
   {
     "id": "food_ramen",
     "name": "Ramen improvisado",
     "category": "meal",
+    "price": 18,
     "needsDelta": { "hunger": -55, "mood": 8, "energy": -3 }
   },
   {
     "id": "food_churros",
     "name": "Churros con azúcar",
     "category": "treat",
+    "price": 12,
     "needsDelta": { "hunger": -25, "mood": 10, "energy": -2 }
   },
   {
     "id": "drink_coffee",
     "name": "Café con hielo",
     "category": "drink",
+    "price": 6,
     "needsDelta": { "hunger": -5, "mood": 3, "energy": 12 }
   }
 ]

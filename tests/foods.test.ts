@@ -17,6 +17,8 @@ describe("food catalog", () => {
       expect(food.name.trim().length).toBeGreaterThan(0);
       expect(FOOD_CATEGORIES).toContain(food.category);
       expect(Object.keys(food.needsDelta).length).toBeGreaterThan(0);
+      expect(Number.isInteger(food.price)).toBe(true);
+      expect(food.price).toBeGreaterThanOrEqual(0);
     }
   });
 
@@ -42,8 +44,8 @@ describe("food catalog", () => {
 
   it("rechaza catálogos inválidos con errores acumulados", () => {
     const result = validateFoodCatalog([
-      { id: "food_ok", name: "Ok", category: "meal", needsDelta: { hunger: -10 } },
-      { id: "food_ok", name: "", category: "space", needsDelta: { magic: 10 } },
+      { id: "food_ok", name: "Ok", category: "meal", price: 10, needsDelta: { hunger: -10 } },
+      { id: "food_ok", name: "", category: "space", price: 10, needsDelta: { magic: 10 } },
     ]);
 
     expect(result.ok).toBe(false);
@@ -51,5 +53,13 @@ describe("food catalog", () => {
       expect(result.errors.length).toBeGreaterThanOrEqual(2);
       expect(result.errors.join("\n")).toContain("duplicado");
     }
+  });
+
+  it("rechaza precios inválidos (faltantes, negativos o no enteros)", () => {
+    const base = { id: "food_ok", name: "Ok", category: "meal", needsDelta: { hunger: -10 } };
+    expect(validateFoodCatalog([base]).ok).toBe(false);
+    expect(validateFoodCatalog([{ ...base, price: -1 }]).ok).toBe(false);
+    expect(validateFoodCatalog([{ ...base, price: 1.5 }]).ok).toBe(false);
+    expect(validateFoodCatalog([{ ...base, price: 10 }]).ok).toBe(true);
   });
 });

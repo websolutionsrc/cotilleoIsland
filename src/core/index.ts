@@ -5,3 +5,4 @@ export * from "./personality-derived";
 export * from "./needs";
 export * from "./avatar";
 export * from "./resident";
+export * from "./pantry";
