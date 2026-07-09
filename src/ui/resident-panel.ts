@@ -1,14 +1,17 @@
 import type { Resident } from "@/core/resident";
+import type { ResidentId } from "@/core/ids";
 import { PERSONALITY_KEYS, type Personality } from "@/core/personality";
 import { applyFoodEffect, needsToStatus } from "@/core/needs";
 import type { FoodItem } from "@/data/foods";
 import { foodReactionFor } from "@/dialogue/food-reactions";
-import type { SceneIntent, SceneResolutionAction } from "@/events";
+import { isSocialSceneType, type SceneIntent, type SceneResolutionAction } from "@/events";
 import { updateResident, ResidentValidationError } from "@/residents/factory";
 
 export interface ResidentPanelOptions {
   container: HTMLElement;
   resident: Resident;
+  /** F4.4: lista completa para el selector. Si falta, se asume solo `resident`. */
+  residents?: readonly Resident[];
   foods?: readonly FoodItem[];
   activeScene?: SceneIntent | null;
   activeSceneText?: string | null;
@@ -16,8 +19,15 @@ export interface ResidentPanelOptions {
   onSave: (updated: Resident) => Promise<void> | void;
   /** Llamado con el residente actualizado tras darle comida. */
   onGiveFood?: (updated: Resident, food: FoodItem, reaction: string) => Promise<void> | void;
-  /** Called when the current F3 scene is resolved. */
-  onResolveScene?: (intent: SceneIntent, action: SceneResolutionAction) => Promise<void> | void;
+  /**
+   * Called when the current scene is resolved. `action` is omitted for
+   * social scenes (F4): resuelven sin elegir sub-accion (ver SaveSystem.resolveScene).
+   */
+  onResolveScene?: (intent: SceneIntent, action?: SceneResolutionAction) => Promise<void> | void;
+  /** F4.4: crea un residente nuevo con el nombre dado y lo hace el activo. */
+  onCreateResident?: (name: string) => Promise<void> | void;
+  /** F4.4: cambia cual residente se muestra/edita en el panel y la escena. */
+  onSwitchResident?: (id: ResidentId) => Promise<void> | void;
 }
 
 export interface ResidentPanel {
@@ -25,6 +35,8 @@ export interface ResidentPanel {
   setResident(resident: Resident): void;
   /** Updates the active F3 scene shown in the panel. */
   setActiveScene(intent: SceneIntent | null, text?: string | null): void;
+  /** F4.4: refresca el selector tras crear/cambiar de residente. */
+  setResidents(residents: readonly Resident[], activeId: ResidentId): void;
 }
 
 const PERSONALITY_LABELS: Record<keyof Personality, string> = {
@@ -43,7 +55,8 @@ const PERSONALITY_LABELS: Record<keyof Personality, string> = {
  * solo construye el DOM y traduce eventos de input a llamadas de dominio.
  */
 export function mountResidentPanel(options: ResidentPanelOptions): ResidentPanel {
-  const { container, foods = [], onGiveFood, onResolveScene, onSave } = options;
+  const { container, foods = [], onGiveFood, onResolveScene, onSave, onCreateResident, onSwitchResident } =
+    options;
   let current = options.resident;
   let activeScene = options.activeScene ?? null;
   let activeSceneText = options.activeSceneText ?? null;
@@ -54,6 +67,40 @@ export function mountResidentPanel(options: ResidentPanelOptions): ResidentPanel
   const title = document.createElement("h2");
   title.textContent = "Tu residente";
   container.appendChild(title);
+
+  const residentsTitle = document.createElement("h3");
+  residentsTitle.textContent = "Residentes";
+  container.appendChild(residentsTitle);
+
+  const residentSelect = document.createElement("select");
+  residentSelect.id = "resident-switcher";
+  residentSelect.setAttribute("aria-label", "Cambiar de residente");
+  container.appendChild(residentSelect);
+
+  const newResidentRow = document.createElement("div");
+  newResidentRow.className = "resident-panel__row";
+  const newResidentNameInput = document.createElement("input");
+  newResidentNameInput.type = "text";
+  newResidentNameInput.placeholder = "Nombre del nuevo residente";
+  newResidentNameInput.maxLength = 40;
+  const createResidentButton = document.createElement("button");
+  createResidentButton.type = "button";
+  createResidentButton.textContent = "Crear residente";
+  createResidentButton.disabled = onCreateResident === undefined;
+  newResidentRow.append(newResidentNameInput, createResidentButton);
+  container.appendChild(newResidentRow);
+
+  function renderResidentOptions(residents: readonly Resident[], activeId: ResidentId): void {
+    residentSelect.innerHTML = "";
+    for (const candidate of residents) {
+      const option = document.createElement("option");
+      option.value = candidate.id;
+      option.textContent = candidate.name;
+      option.selected = candidate.id === activeId;
+      residentSelect.appendChild(option);
+    }
+    residentSelect.disabled = residents.length <= 1 || onSwitchResident === undefined;
+  }
 
   const nameLabel = document.createElement("label");
   nameLabel.textContent = "Nombre";
@@ -177,6 +224,7 @@ export function mountResidentPanel(options: ResidentPanelOptions): ResidentPanel
   }
 
   function actionLabelForActiveScene(): string {
+    if (activeScene && isSocialSceneType(activeScene.sceneType)) return "Resolver";
     const action = actionForActiveScene();
     if (!action) return "Resolver escena";
     if (action.kind === "give_food") return "Dar comida";
@@ -193,7 +241,9 @@ export function mountResidentPanel(options: ResidentPanelOptions): ResidentPanel
 
     sceneBox.textContent = activeSceneText ?? "Mara quiere hacer algo.";
     resolveSceneButton.textContent = actionLabelForActiveScene();
-    resolveSceneButton.disabled = onResolveScene === undefined || actionForActiveScene() === null;
+    // Las escenas sociales (F4) no eligen SceneResolutionAction: resolver ES la accion.
+    const social = isSocialSceneType(activeScene.sceneType);
+    resolveSceneButton.disabled = onResolveScene === undefined || (!social && actionForActiveScene() === null);
   }
 
   function syncInputs(resident: Resident): void {
@@ -264,13 +314,31 @@ export function mountResidentPanel(options: ResidentPanelOptions): ResidentPanel
 
   resolveSceneButton.addEventListener("click", () => {
     if (!activeScene || !onResolveScene) return;
+    if (isSocialSceneType(activeScene.sceneType)) {
+      void onResolveScene(activeScene);
+      return;
+    }
     const action = actionForActiveScene();
     if (!action) return;
     void onResolveScene(activeScene, action);
   });
 
+  residentSelect.addEventListener("change", () => {
+    if (!onSwitchResident) return;
+    void onSwitchResident(residentSelect.value as ResidentId);
+  });
+
+  createResidentButton.addEventListener("click", () => {
+    if (!onCreateResident) return;
+    const name = newResidentNameInput.value.trim();
+    if (!name) return;
+    void onCreateResident(name);
+    newResidentNameInput.value = "";
+  });
+
   syncInputs(current);
   syncScene();
+  renderResidentOptions(options.residents ?? [current], current.id);
 
   return {
     setResident(resident: Resident) {
@@ -282,6 +350,9 @@ export function mountResidentPanel(options: ResidentPanelOptions): ResidentPanel
       activeScene = intent;
       activeSceneText = text ?? null;
       syncScene();
+    },
+    setResidents(residents: readonly Resident[], activeId: ResidentId) {
+      renderResidentOptions(residents, activeId);
     },
   };
 }

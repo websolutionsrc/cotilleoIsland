@@ -2,6 +2,36 @@
 
 Formato: entradas por fase/hito. Fechas en `YYYY-MM-DD`.
 
+## [F4.4] - 2026-07-09
+
+### Added
+- Minimal multi-resident UI: "Residentes" section in the panel with a
+  switcher `<select>` and a "Crear residente" button/input. `main.ts`
+  respects `SaveState.activeResidentId` on boot (was always `residents[0]`).
+- Social scene resolution wired into the panel: the "Resolver" button is now
+  enabled for social scenes and calls `onResolveScene(intent)` with no
+  action, matching `SaveSystem.resolveScene`'s optional `action` param.
+
+### Fixed
+- With multiple residents, `computeActiveScenes()` can return a scene not
+  involving the currently displayed resident (it picks up to 3 globally).
+  `refreshResidentAndScene` now filters for the current resident's own
+  scene before showing/allowing resolution.
+- Social scene text now resolves and passes the real counterpart resident
+  to `sceneTextFor`, instead of falling back to "someone".
+
+### Validation
+- `npm run build` and `npm test` (136/136) green.
+- Manually driven through real DOM interaction (not just state seeding):
+  created a second resident via the actual input+button, saw the switcher
+  update and auto-select the new resident, saw the real "meet" scene text
+  naming both residents, clicked the real "Resolver" button, and confirmed
+  via `SaveSystem.loadState()` that the relationship became "acquaintances"
+  (friendship=5) and both residents' mood updated (70->73). Zero console
+  errors throughout.
+
+**F4 (Relationships) is now fully closed: F4.1-F4.4 all done.**
+
 ## [F4.3] - 2026-07-08
 
 ### Added

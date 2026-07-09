@@ -48,7 +48,7 @@ Design in `docs/engine_design_f3-f5.md` section 3. Branch `develop/f4-relationsh
 | F4.1 | Pure core: types, key normalization, chemistry, status machine, decay, applyRelationshipAction | **DONE** |
 | F4.2 | SaveState v5 (`relationships[]`) + migration v4->v5 + SaveSystem wiring | **DONE** |
 | F4.3 | Social scene types (meet/chat/argument/reconcile/flirt/confess/propose) + detectors + scene texts + resolution effects on both participants | **DONE** |
-| F4.4 | UI - scope open, see note below | pending |
+| F4.4 | Minimal create/select-resident UI + wire social scene resolution into the panel | **DONE** |
 
 - `src/relationships/types.ts`: `Relationship` (persisted fields: a/b ordered pair,
   friendship/tension/romance, status, lastInteractionAtMs), `RelationshipStatus` union.
@@ -174,12 +174,44 @@ a few functions grew.
   relationship (strangers->acquaintances, friendship=5) in one write. Zero console
   errors.
 
-### F4.4 scope decision (resolved 2026-07-08)
-The game currently only ever shows/edits a single resident (`main.ts` uses
-`residents[0]`). Decision: F4.4 adds a **minimal** create-resident + select-resident
-UI (a button + a simple switcher), not a full resident-management screen. This is the
-smallest addition that lets F4's social scenes actually trigger and be observed live
-in the preview, rather than only through seeded `SaveSystem` calls.
+## Fase 4.4 - minimal multi-resident UI (F4 fully closed)
+Scope decided 2026-07-08: minimal create-resident + select-resident UI (a button + a
+simple switcher), not a full resident-management screen - the smallest addition that
+lets F4's social scenes actually trigger and be observed live, not just through
+seeded `SaveSystem` calls.
+
+- `resident-panel.ts`: new "Residentes" section - a `<select>` switcher (disabled
+  with 0-1 residents) + a name input + "Crear residente" button. New panel options
+  `residents`, `onCreateResident`, `onSwitchResident`; new `setResidents(residents,
+  activeId)` method on the returned `ResidentPanel` handle.
+- `main.ts`: bootstrap now respects `SaveState.activeResidentId` (previously always
+  used `residents[0]`, ignoring it). `refreshResidentAndScene` was rewritten: with
+  multiple residents, `computeActiveScenes()` can return a scene that does NOT
+  involve the currently-displayed resident (it picks up to 3 GLOBALLY) - this is now
+  filtered by `scene.participants.includes(resident.id)` before showing/allowing
+  resolution, so the panel never displays (or lets you resolve) another resident's
+  scene by mistake. The social scene's counterpart resident is looked up by id and
+  passed to `sceneTextFor` so the text names both parties instead of falling back to
+  "someone". `onCreateResident` creates + saves + marks the new resident active
+  (`setActiveResident`) + refreshes; `onSwitchResident` does the same for an existing id.
+- **Extended scope slightly beyond the original decision**: also wired social scene
+  *resolution* into the panel (`resolveSceneButton` was unconditionally disabled for
+  social scenes after F4.3, since `actionForActiveScene()` returns null for them by
+  design). Without this, the entire F4 relationship engine - detection, cooldowns,
+  persistence, all tested end-to-end - would have been unreachable through real UI
+  clicks, only through `preview_eval` shortcuts. Cheap fix: `SaveSystem.resolveScene`
+  already made `action` optional in F4.3; `onResolveScene`'s panel-facing type
+  followed suit, and the button now resolves social scenes with `onResolveScene(intent)`
+  (no action) when `isSocialSceneType(activeScene.sceneType)`.
+- Validation: `npm run build`/`npm test` (136/136) green. **Manually driven through
+  real DOM interaction** (fill + click, not just `preview_eval` state seeding): typed
+  "Bob" in the new-resident input, clicked "Crear residente" - Bob was created and
+  auto-selected, the switcher gained a second option, the scene box correctly showed
+  "Bob and Nuevo residente are meeting for the first time.", clicked the real
+  "Resolver" button - confirmed via `SaveSystem.loadState()` that the relationship
+  became `acquaintances`/friendship=5 and both residents' mood went 70->73, and the
+  scene box correctly cleared afterward. Zero console errors throughout.
+- **F4 (Relationships) is now fully closed: F4.1-F4.4 all DONE.**
 
 ## Fase 1.2 — personalidad: sliders → tags/categoría/expresión
 - `src/core/personality-derived.ts`: proyecciones puras y deterministas de los 6 sliders
