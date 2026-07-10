@@ -49,12 +49,13 @@
         ],
         "anchors": {
           "coordinateSpace": "source_canvas_pixels",
-          "feetBaselineY": null,
-          "headPivot": null,
-          "leftHandSocket": null,
-          "rightHandSocket": null,
-          "chestSocket": null,
-          "resolutionRule": "Registration master approved 2026-07-10 (docs/art/pilot/mara_v5_cutout.png). F0.2 measures these anchors on that exact file and freezes them without scaling or recropping the source canvas. Review reference: feet baseline observed at y=1007; define the head unit (skull vs hair box) before freezing headPivot."
+          "feetBaselineY": 1007,
+          "headPivot": { "x": 628, "y": 465 },
+          "leftHandSocket": { "x": 752, "y": 790 },
+          "rightHandSocket": { "x": 527, "y": 717 },
+          "chestSocket": { "x": 628, "y": 648 },
+          "measurementRecord": "docs/art/contracts/mara-v5-registration-measurements.json",
+          "resolutionRule": "Measured from the approved registration master without scaling or recropping. Keep these values through the first composed-pilot proof; replace the master rather than silently moving anchors after approval."
         },
         "allowedEditTargets": ["garment_mask", "hair_mask", "expression_mask", "accessory_mask", "tattoo_mask"],
         "editInvariants": ["identity", "body_pose", "canvas", "baseline", "lighting", "unmasked_pixels"],

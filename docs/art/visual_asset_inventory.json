@@ -215,7 +215,7 @@
       },
       "notes": [
         "Human approved 2026-07-10 as the v01.01.F0 neutral registration master, after Fable visual review: 96/128/256 px reads verified over stage color, residual fringe re-verified at exactly 7 px (dry-run), warm-brown outline and top-left lighting invariants pass, feet baseline measurable at y=1007.",
-        "Review findings for F0.2: define the head unit operationally before freezing anchors (measured head-with-hair ratio 0.507 vs contract 0.45); canonical hand-on-hip pose means upper-garment masks must respect the crossing forearm, and the free right hand is the primary held-item socket.",
+        "Review findings for F0.2: define the head unit operationally before freezing anchors (measured head-with-hair ratio 0.507 vs contract 0.45); canonical hand-on-hip pose means upper-garment masks must respect the bent character-right arm, and the free character-LEFT hand (screen right, tattoo forearm) is the primary held-item socket - corrected 2026-07-10 during the F0.2.1 anchor review, the original note had the handedness mirrored.",
         "Anchors remain unmeasured; F0.2 measures and freezes them on this exact file without scaling or recropping."
       ]
     },
@@ -291,8 +291,8 @@
       "targetSubphase": "v01.01.F0.2",
       "ownerLane": "shared",
       "primaryOwner": "fable",
-      "humanDependency": "human_blocking",
-      "gate": "Human approves the neutral registration master.",
+      "humanDependency": "none",
+      "gate": "Approved Mara v5 registration master is measured and frozen through the composed-pilot proof.",
       "deliverables": ["RGBA master", "measured anchors", "fixed canvas and baseline"]
     },
     {
@@ -406,6 +406,13 @@
       "id": "visual-contract-validator",
       "path": "tools/art/validate-contracts.mjs",
       "role": "Validate frozen visual tokens, family contracts, dependencies, and human gates",
+      "ownerLane": "codex",
+      "status": "active"
+    },
+    {
+      "id": "registration-master-measurer",
+      "path": "tools/art/measure-registration-master.mjs",
+      "role": "Measure transparent figure bounds and the feet baseline from an approved registration master",
       "ownerLane": "codex",
       "status": "active"
     }

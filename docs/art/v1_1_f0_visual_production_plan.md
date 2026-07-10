@@ -197,6 +197,22 @@ Freeze shared tokens from `docs/art_library.md`:
 One body + one garment + one hairstyle + two expressions align without seams, remain
 readable at 96 px, recolor correctly, and are approved by the user.
 
+### Implementation status - F0.2.1 DONE 2026-07-10
+
+- The approved registration master is `docs/art/pilot/mara_v5_cutout.png`; its raw
+  source remains preserved and is never edited in place.
+- `docs/art/contracts/mara-v5-registration-measurements.json` records the exact
+  1254 x 1254 canvas, opaque figure bounds `362,170` through `899,1007`, and feet
+  baseline `y=1007`.
+- The proposed authoring anchors are fixed against that source canvas: head
+  `(628,465)`, chest `(628,648)`, character-left hand `(752,790)`, and
+  character-right hand `(527,717)`.
+- `tools/art/measure-registration-master.mjs` plus its focused Node tests detect an
+  accidental recrop, scale, or alpha-bound change before composite work starts.
+- These anchors are measured and protected through the composed-pilot proof. F0.2
+  remains open until a garment, hair pair, and expression composite validate them at
+  96, 128, and 256 px.
+
 ## v1.1 F0.3 - Island and environment pilot
 
 ### Pilot sequence

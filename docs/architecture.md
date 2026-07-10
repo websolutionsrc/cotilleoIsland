@@ -1,17 +1,16 @@
-# Arquitectura — Cotilleo Island
+# Architecture — Cotilleo Island
 
-## Principio rector
+## Guiding Principle
 ```
 Core Simulation → decide el estado del juego (V1, determinista, por reglas)
 AI Layer        → mejora cómo se expresa ese estado (V2, opcional, reemplazable)
 ```
-El motor decide el estado; la IA embellece/resume/sugiere; la IA no manda sobre el núcleo.
+The engine decides the state; the AI embellishes/summarizes/suggests; the AI does not command the core.
 
 ## Stack
-TypeScript + Vite + Phaser 3 (render 2D). Lógica de simulación **pura**, sin dependencia
-de Phaser. Persistencia local en **IndexedDB** (localForage). PWA instalable en iPad.
+TypeScript + Vite + Phaser 3 (render 2D). **Pure** simulation logic, without Phaser dependency. Local persistence in **IndexedDB** (localForage). PWA installable on iPad.
 
-## Módulos
+## Modules
 ```
 App (PWA)
 ├─ Core             estado del juego · tick de simulación · tipos
@@ -25,45 +24,44 @@ App (PWA)
 ├─ Save             IndexedDB · logs resumidos · export/import
 └─ UI (Phaser)      escenas · pantallas · render
 ```
-Regla de acoplamiento: **el core no importa Phaser**; Phaser solo en `src/ui/` y `main.ts`.
+Coupling rule: **the core does not import Phaser**; Phaser only in `src/ui/` and `main.ts`.
 
-## Event Engine (por reglas) — diseño cerrado en `engine_design_f3-f5.md`
-Sin ticks ni timers: todo se recalcula **al abrir la isla o tras una acción** (patrón
-`applyNeedsDecay`). Pipeline (funciones puras, reloj y RNG inyectados):
+## Event Engine (by rules) — closed design in `engine_design_f3-f5.md`
+No ticks or timers: everything is recalculated **on opening the island or after an action** (`applyNeedsDecay` pattern). Pipeline (pure functions, injected clock and RNG):
 ```
 decay (F2) → detectores (needs+personality) → filtro duro de cooldown (sceneLog)
 → score = urgency × pesoTipo → 1 escena/residente (máx 3) → SceneIntent (efímera)
 → plantilla → el jugador resuelve → efectos + log + stats en UNA escritura
 ```
-- F3: 5 `sceneType` (`hungry/tired/bored/lonely/quirk`); excepción única de cooldown:
-  hambre urgente (≥ 90). F4 añade detectores sociales; F5 añade `zone_opening` y
-  recompensas. El motor no se reescribe: solo crece la lista de detectores.
-- La escena activa **no se persiste** (se recalcula); solo se persiste `sceneLog`
-  (cap 20) + `stats`. Contrato completo: `scene_intent_spec.md`; decisiones: ADR 0005.
-- Regla derivado-vs-persistido que ordena todo el motor: **derivado si no tiene memoria;
-  persistido si una transición depende de la historia** (generaliza el ADR 0004; por eso
-  `chemistry` es pura y `Relationship.status` se persiste).
+- F3: 5 `sceneType` (`hungry/tired/bored/lonely/quirk`); single cooldown exception:
+  urgent hunger (≥ 90). F4 adds social detectors; F5 adds `zone_opening` and
+  rewards. The engine does not rewrite itself: it only grows the detector list.
+- The active scene **is not persisted** (it is recalculated); only `sceneLog`
+  (cap 20) + `stats` is persisted. Full contract: `scene_intent_spec.md`; decisions: ADR 0005.
+- Derived-vs-persisted rule that orders the entire engine: **derived if it has no memory;
+  persisted if a transition depends on history** (generalizes ADR 0004; hence
+  `chemistry` is pure and `Relationship.status` is persisted).
 
-## Interfaces (IA detrás de contratos)
+## Interfaces (AI behind contracts)
 ```ts
 export interface DialogueGenerator { generate(ctx: DialogueContext): DialogueResult; }
 export interface MemorySummarizer  { summarize(event: GameEvent): MemorySummary; }
 export interface EventSuggestor     { suggest(snapshot: WorldSnapshot): SceneIntent[]; }
 ```
-- V1: `TemplateDialogueGenerator` (plantillas).
-- V2/MVP: `AiDialogueGenerator` con `AiClient` + `DialogueValidator` + fallback a plantilla.
-- Regla: `EventSuggestor` **propone** → `EventEngine` **valida** → `GameState` **aplica**.
+- V1: `TemplateDialogueGenerator` (templates).
+- V2/MVP: `AiDialogueGenerator` with `AiClient` + `DialogueValidator` + fallback to template.
+- Rule: `EventSuggestor` **proposes** → `EventEngine` **validates** → `GameState` **applies**.
 
-## Persistencia
-Guardado **local** en IndexedDB (localForage) con esquema versionado y migraciones.
-Export/import manual (JSON). Sin backend en V1. Ver [`data_model.md`](data_model.md).
+## Persistence
+**Local** saving in IndexedDB (localForage) with versioned schema and migrations.
+Manual export/import (JSON). No backend in V1. See [`data_model.md`](data_model.md).
 
-## Subsistema de personalidad: sliders → tags/categoría/expresión (Fase 1.2)
-Los 6 sliders de `Personality` (`energy`, `sociability`, `patience`, `weirdness`,
-`romanticism`, `kindness`) son la única fuente de verdad. `src/core/personality-derived.ts`
-(TS puro, sin Phaser, sin dependencias de storage) expone tres proyecciones **puras y
-deterministas** de esos sliders, recalculadas siempre al vuelo, nunca persistidas ni
-editables por separado:
+## Personality Subsystem: sliders → tags/category/expression (Phase 1.2)
+The 6 sliders in `Personality` (`energy`, `sociability`, `patience`, `weirdness`,
+`romanticism`, `kindness`) are the single source of truth. `src/core/personality-derived.ts`
+(pure TS, no Phaser, no storage dependencies) exposes three **pure and
+deterministic** projections of those sliders, recalculated on the fly, never persisted or
+editable separately:
 ```
 Personality (sliders, persistidos)
         │
@@ -71,14 +69,13 @@ Personality (sliders, persistidos)
         ├─ personalityCategory(p)      → 1 de 5 familias amplias ("Equilibrada"/"Sociable"/"Reservada"/"Cariñosa"/"Excéntrica")
         └─ personalityExpression(p)    → hint de pose/idle ("animada", "sonriente", "seria", "peculiar", "neutral")
 ```
-Consumido hoy por `src/ui/island-scene.ts` (muestra categoría/tags y tiñe el placeholder
-según la expresión); en Fase 3 lo consumirán también las plantillas de diálogo/`SceneIntent`
-en vez del campo libre `tone`. Ver `docs/data_model.md` y `docs/adr/0004-personality-model.md`.
+Consumed today by `src/ui/island-scene.ts` (displays category/tags and colors the placeholder
+according to the expression); in Phase 3, the dialogue templates/`SceneIntent` will also consume it instead of the free field `tone`. See `docs/data_model.md` and `docs/adr/0004-personality-model.md`.
 
-La afinidad romántica **entre dos residentes** (`chemistry`) es un cálculo distinto,
-pendiente de Fase 4 (Relationships): no vive en `Personality` ni en este módulo. Ver
-"Romance individual vs. `chemistry` de pareja" en `data_model.md`.
+Romantic affinity **between two residents** (`chemistry`) is a different calculation,
+pending Phase 4 (Relationships): it does not live in `Personality` nor in this module. See
+"Individual romance vs. `chemistry` couple" in `data_model.md`.
 
-## Consideración de rendimiento (PWA en iPad)
-Sprites 2D ligeros, atlas de texturas, poca lógica por frame (la simulación avanza por
-tick, no por frame). Validar almacenamiento/rendimiento en Safari iPad pronto.
+## Performance Consideration (PWA on iPad)
+Light 2D sprites, texture atlases, little logic per frame (simulation advances by
+tick, not by frame). Validate storage/performance on Safari iPad soon.

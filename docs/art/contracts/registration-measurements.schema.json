@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "cotilleo-island://art/registration-measurements.schema.json",
+  "title": "Cotilleo Island registration master measurements",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "release", "phase", "masterId", "sourcePath", "measuredAt", "coordinateSpace", "imageMeasurement", "authoringAnchors", "status", "proofRequired"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "schemaVersion": { "const": 1 },
+    "release": { "const": "v01.01" },
+    "phase": { "const": "F0.2" },
+    "masterId": { "type": "string", "minLength": 1 },
+    "sourcePath": { "type": "string", "pattern": "^[^\\\\]+$" },
+    "measuredAt": { "type": "string", "format": "date" },
+    "coordinateSpace": { "const": "source_canvas_pixels" },
+    "imageMeasurement": { "type": "object" },
+    "authoringAnchors": { "type": "object" },
+    "status": { "const": "measured_pending_composite_proof" },
+    "proofRequired": { "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 1 } }
+  }
+}

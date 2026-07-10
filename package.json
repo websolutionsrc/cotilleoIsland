@@ -14,6 +14,8 @@
     "art:validate": "node tools/art/validate-inventory.mjs",
     "art:validate-contracts": "node tools/art/validate-contracts.mjs",
     "test:art-contracts": "node --test tools/art/contract-lib.node-tests.mjs",
+    "art:measure-master": "node tools/art/measure-registration-master.mjs",
+    "test:art-measure": "node --test tools/art/measure-registration-master.node-tests.mjs",
     "defringe": "node tools/defringe/defringe.mjs"
   },
   "dependencies": {
