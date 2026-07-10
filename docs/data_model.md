@@ -3,7 +3,7 @@
 Datos estructurados desde el principio. TypeScript + JSON. Persistencia local en
 **IndexedDB** (localForage), con esquema **versionado** y migraciones. Export/import
 manual en JSON. Ids estables y legibles (`resident_lina`, `guitar_01`).
-La versión actual del `SaveState` es **3**.
+La versión actual del `SaveState` es **7** (ver tabla de migraciones al final de este doc).
 
 ## Resident
 ```json
@@ -18,8 +18,10 @@ Necesidades V1 (0–100): `hunger`, `mood`, `energy`, `social_need`, `boredom`.
 En Fase 2.3, el `SaveState` guarda `needsUpdatedAtMs` (timestamp Unix en ms, o
 `null` si aún no hay referencia temporal) para poder aplicar decaimiento al abrir
 la isla sin depender de UI ni de Phaser.
-`kindness` (amabilidad/calidez) se añadió en Fase 1.1: eje que en fases futuras (diálogo,
-Event Engine) disparará escenas de conflicto/ayuda. Por ahora es solo dato, sin lógica asociada.
+`kindness` (amabilidad/calidez) se añadió en Fase 1.1. Desde F4 tiene lógica real: el
+detector de la escena social `reconcile` (`src/events/detectors.ts`) exige que el
+promedio de `kindness` de ambos residentes supere un umbral para que una relación
+`fighting` pueda reconciliarse.
 
 ### Personalidad: 6 sliders, única fuente de verdad
 
@@ -49,53 +51,63 @@ Implementado en `src/core/personality-derived.ts` (TS puro, sin Phaser):
   (`"animada"`, `"sonriente"`, `"seria"`, `"peculiar"`, `"neutral"`) por
   prioridad fija sobre el rasgo dominante.
 
-`docs/scene_intent_spec.md` usa un campo libre `tone` en sus ejemplos de
-`SceneIntent`; cuando la Fase 3 (diálogo) lo conecte a datos reales, debe
-alimentarse de `personalityToTags`/`personalityCategory`, no de tags escritas a
-mano por residente.
+Implementado: `SceneIntent` (`src/events/types.ts`) no lleva un campo `tone`
+suelto - el texto de escena (`sceneTextFor`, `src/dialogue/scene-texts.ts`)
+consulta `personalityToTags` directamente sobre el residente en el momento de
+renderizar, no un valor guardado en la escena.
 
 ## Relationship
+Implementado en `src/relationships/` (F4). Par siempre normalizado `a < b`
+(orden lexicográfico de ids, ver `orderedPair`) para que una relación tenga una
+única clave sin importar quién la consulta primero. **No tiene `trust`**: el
+diseño de F4 lo descartó (deliberado, no un olvido) a favor de solo
+`friendship`/`tension`/`romance` + `status` como máquina de estados explícita.
+
 ```json
 {
   "a": "resident_lina",
   "b": "resident_nico",
   "friendship": 52,
-  "trust": 34,
   "tension": 12,
-  "romantic_interest": 0,
+  "romance": 0,
   "status": "acquaintances",
-  "last_interaction": "se conocieron en la plaza"
+  "lastInteractionAtMs": 1783000000000
 }
 ```
-Estados V1 (`status`):
+Estados V1 (`RelationshipStatus`, `src/relationships/status.ts`):
 ```
-Desconocidos → Conocidos → Amigos → Mejores amigos
-                     ↓                 ↓
-               Tensión / pelea    Pareja → Convivencia / matrimonio
+strangers → acquaintances → friends → besties
+                  ↓                      ↓
+              fighting              dating → partners
 ```
-**En V1**: amistad, tensión, **romance y matrimonio/convivencia**.
+`status` solo cambia por una acción resuelta (`applyRelationshipAction`),
+nunca por cruce pasivo de umbral. Una relación inexistente en `SaveState`
+equivale a `strangers` por defecto (`getRelationship`) - no hay que
+inicializar entradas para cada par de residentes.
+
+**En V1**: amistad, tensión, **romance y matrimonio/convivencia** (`dating`/`partners`).
 **Fuera de V1**: **bebés** (y descendencia). Se retoma tras validar el core loop.
 
-### Romance individual vs. `chemistry` de pareja (plan Fase 4)
+### Romance individual vs. `chemistry` de pareja (implementado en F4)
 
 `Personality.romanticism` es una propensión **individual**: cuánto se enamora
 en general un residente, sin conocer a nadie en concreto. Es y sigue siendo un
 slider normal de `Personality` (persistido, editable con el resto de rasgos).
 
-La **afinidad entre dos residentes concretos** (a quién le gusta quién, y
-cuánto) es un concepto distinto que se implementará en **Fase 4** como un valor
-`chemistry` calculado a partir de: `romanticism` de ambos residentes +
-compatibilidad de sus personalidades (p.ej. categorías/tags complementarias) +
-el estado actual de la relación (`friendship`, `tension`, `status`, etc.).
-`chemistry` **no será un campo editable** ni un dato independiente guardado
-aparte de sus insumos: será, igual que las tags de personalidad, una función
-pura `chemistry(a: Personality, b: Personality, relationship: Relationship):
-number` (nombre/forma exactos a definir en Fase 4), recalculable en cualquier
-momento a partir del `SaveState` existente. Hasta Fase 4, `romantic_interest`
-en `Relationship` sigue siendo el único dato de afinidad, sin cálculo
-automático.
+La **afinidad entre dos residentes concretos** es un valor `chemistry`
+distinto, calculado a partir de: `romanticism` de ambos residentes +
+compatibilidad de sus personalidades + el estado actual de la relación
+(`friendship`, `tension`, `status`, etc.). `chemistry` **no es un campo
+editable** ni un dato guardado aparte de sus insumos: es, igual que las tags
+de personalidad, una función pura `chemistry(a: Personality, b: Personality,
+relationship: Relationship): number` (`src/relationships/chemistry.ts`),
+recalculable en cualquier momento a partir del `SaveState` existente - nunca
+se persiste.
 
-## Item
+## Item (no implementado - fuera de F1-F5)
+Plan para un futuro sistema de objetos/inventario; `src/data/foods.ts` (F1-F5) ya
+cubre el caso `food` de forma concreta (ver "Isla y progreso" más abajo). El resto
+de tipos siguen siendo diseño, no código:
 ```json
 {
   "id": "guitar_01",
@@ -106,24 +118,41 @@ automático.
 ```
 Tipos: `food`, `clothing`, `decoration`, `special_item`, `catchphrase`, `quirk`.
 
-## Isla y progreso
-Zonas V1: residencial, tienda de comida, tienda de ropa, taller, plaza, ayuntamiento.
-Progresión ejemplo:
+## Isla y progreso (implementado en F5)
+Catálogo fijo de 5 zonas (`src/data/zones.ts`, `ZONE_CATALOG`), desbloqueadas por
+número de residentes (no hay más zonas planeadas para V1 - añadir una nueva es
+editar el catálogo, no rediseñar el sistema):
 ```
-1 residente  → tienda de comida
-3 residentes → tienda de ropa
+0 residentes → residential (siempre desbloqueada)
+1 residente  → food_shop
+3 residentes → clothes_shop
 5 residentes → plaza
-8 residentes → taller
-10 residentes → expansión de casas
+8 residentes → workshop
 ```
+Cada zona recién desbloqueada dispara **una vez** una escena `zone_opening`
+(protagonizada por el residente más antiguo) cuando el jugador la resuelve;
+`celebratedZoneIds` (separado de `unlockedZoneIds`) evita repetirla.
 
-## Memoria / eventos resumidos
+### Economía
+`wallet: { coins: number }` - se ganan monedas al resolver cualquier escena
+(`coinsForScene`: 10 si la escena era urgente, 5 si no) y se gastan comprando
+comida. La comida ya no es gratis: cada `FoodItem` tiene `price` (`src/data/foods.json`)
+y solo puede darse a un residente si hay stock en `pantry: PantryEntry[]`
+(`{ itemId, qty }[]`) - comprar (`SaveSystem.buyFood`) añade stock; dar comida
+(`SaveSystem.giveFoodFromPantry` o resolver una escena `hungry`) lo consume.
+
+## Memoria / eventos resumidos (no implementado - plan F6, capa de IA)
 ```json
 { "memory": "Leo y Gala tuvieron una discusión por ruido.", "tag": "tension_vecinal", "importance": 3 }
 ```
+Encaja con el `MemorySummarizer` opcional de F6; hasta entonces `sceneLog` (cap 20,
+sin resumir) es la única memoria de eventos pasados.
 
-## Fixtures iniciales (`src/data/`)
-`residents_mock.json`, `items.json`, `events.json`, `dialogue_templates.json`.
+## Fixtures reales (`src/data/`)
+`foods.json` + `foods.ts` (F1-F5), `quirks.ts` (F3), `zones.ts` (F5). Los nombres
+`residents_mock.json`/`items.json`/`events.json`/`dialogue_templates.json` del plan
+original no se llegaron a crear con esos nombres; el contenido equivalente vive en
+los archivos de arriba.
 
 ## Guardado
 `SaveState` versionado (`schemaVersion`). Al cargar, aplicar migraciones incrementales si
@@ -135,9 +164,10 @@ Historial y plan de versiones (diseño completo en `engine_design_f3-f5.md` §1)
 |---|---|---|
 | 2 | F1.1 | `kindness` en `Personality` (backfill con default) |
 | 3 | F2.3 | needs normalizadas + `needsUpdatedAtMs` |
-| **4** | **F3** | `sceneLog` (cap 20, entradas `{sceneType, participants[], atMs}`) + `stats.scenesResolved` |
+| 4 | F3 | `sceneLog` (cap 20, entradas `{sceneType, participants[], atMs}`) + `stats.scenesResolved` |
 | 5 | F4 | `relationships: Relationship[]` (par normalizado `a<b`; `status` persistido; sin `trust`) |
-| 6 | F5 | `wallet.coins` + `unlockedZoneIds` + `pantry` (semilla: 50 coins + despensa inicial) |
+| 6 | F5.2 | `wallet.coins` + `unlockedZoneIds` + `pantry` (semilla: 50 coins + despensa inicial; `unlockedZoneIds` calculado retroactivamente según residentes ya existentes) |
+| **7** | **F5.3** | `celebratedZoneIds` (semilla retroactiva = `unlockedZoneIds`, para no disparar celebraciones por progreso previo a la feature) |
 
 Regla que decide qué se persiste: **derivado si no tiene memoria; persistido si una
 transición depende de la historia**. Por eso `chemistry`/tags/escenas activas nunca se

@@ -1,6 +1,9 @@
 # CODEMAP — Cotilleo Island
 
-Mapa de módulos previstos. Se rellena a medida que se implementan (Fase 1: sistema de residentes).
+Mapa de módulos. Estado actual: Fase 5 cerrada (tag `v01.00.F5`); ver la tabla de
+módulos justo abajo para el resumen, y las secciones "Fase N" más adelante en este
+documento para el detalle de cierre de cada subfase (orden de aparición: no es
+estrictamente cronológico, cada sección lleva su propio estado `[DONE]`/`[TODO]`).
 
 ## Metodología Git por fases
 - Trabajar cada fase en una rama dedicada con patrón `develop/fN-nombre-corto`
@@ -28,8 +31,8 @@ Mapa de módulos previstos. Se rellena a medida que se implementan (Fase 1: sist
 ## Módulos (arquitectura objetivo)
 | Módulo | Carpeta | Responsabilidad | Estado |
 |---|---|---|---|
-| **Core** | `src/core/` | Tipos base: `Resident`, `Personality`, `Needs`, `Avatar`, ids tipados (`ResidentId`); proyecciones puras de personalidad (`personality-derived.ts`); lógica pura de necesidades (`needs.ts`) | **Fase 2.1: core de necesidades implementado** (sin UI ni persistencia de F2 aún) |
-| **Residents** | `src/residents/` | `createResident`/`updateResident` (defaults + validación pura de nombre y personalidad) | **Fase 1: implementado** (sin inventario/nivel aún) |
+| **Core** | `src/core/` | Tipos base: `Resident`, `Personality`, `Needs`, `Avatar`, ids tipados (`ResidentId`); proyecciones puras de personalidad (`personality-derived.ts`); lógica pura de necesidades (`needs.ts`); despensa (`pantry.ts`, F5.1) | **F1-F5 DONE** |
+| **Residents** | `src/residents/` | `createResident`/`updateResident` (defaults + validación pura de nombre y personalidad) | **DONE** (sin inventario/nivel - fuera de alcance V1 por ahora) |
 | **Relationships** | `src/relationships/` | `types/key/chemistry/status/decay/apply` — core puro: par normalizado `a<b`, `chemistry` (proyección pura), máquina de estados con guardas, decaimiento, `applyRelationshipAction` (deltas+status en un punto) | **F4 fully DONE (F4.1-F4.4), tagged v01.00.F4** |
 | **Events** | `src/events/` | `types/rng/detectors/cooldowns/select/resolve/resolve-social/reward` — pipeline puro detect→cooldown→score→select, `SceneIntent` efímera (solo + social + `zone_opening`), `sceneLog` cap 20, recompensa de monedas (F5.1) | **F3+F4+F5 DONE** |
 | **Dialogue** | `src/dialogue/` | V1: plantillas (`food-reactions.ts`, `scene-texts.ts` solo+social+zone_opening); V2: IA (`DialogueGenerator`) | **DONE for F3+F4+F5.3 scene types** |
@@ -39,7 +42,7 @@ Mapa de módulos previstos. Se rellena a medida que se implementan (Fase 1: sist
 | **Data** | `src/data/` | Catálogo de comidas (`foods.json`, ahora con `price`) + validación (`foods.ts`), quirks (`quirks.ts`), zonas (`zones.ts`, F5.1+F5.3) | **F5.1+F5.3 DONE** |
 | **Visual direction** | `docs/art_library.md` + `docs/art/references/` + future `public/art/` | 2D art library: characters, outfits, environments, scene language, asset export rules and delegation guidelines so other models can produce visual work without touching the core | **F2.6 art library DONE (ADR 0006, Direction B "Storybook with volume"); pilot asset pass pending before mass batches** |
 
-## Fase 4 - Relationships (F4.1 done; F4.2-F4.4 pending)
+## Fase 4 - Relationships (F4.1-F4.4 done, phase closed)
 Design in `docs/engine_design_f3-f5.md` section 3. Branch `develop/f4-relationships`
 (from `v01.00.F3`). Subfases (mirroring F3's pattern):
 
@@ -434,17 +437,18 @@ pattern:
 - `chemistry` (afinidad romántica por pareja) documentado como plan en `data_model.md`,
   pendiente de **Fase 4** (`src/relationships/`); no implementado en esta fase.
 
-## Fase 3 — Event Engine (F3.1-F3.3 implemented; F3.4 pending)
+## Fase 3 — Event Engine (F3.1-F3.4 done, phase closed, tag v01.00.F3)
 Diseño completo en `docs/engine_design_f3-f5.md` (F3+F4+F5 diseñadas juntas para
-estabilizar el modelo de datos; plan de schema v4/v5/v6). Subfases previstas:
+estabilizar el modelo de datos; plan de schema v4/v5/v6). Subfases:
 - **[DONE] F3.1** `src/events/{types,rng,detectors,cooldowns,select}.ts` — pure core,
   no save/UI.
 - **[DONE] F3.2** Internal `SaveState` schema 4 (`sceneLog` + `stats`) + migration +
   no-downgrade guard + future timestamp clamp + `computeActiveScenes`/`resolveScene`.
 - **[DONE] F3.3** `src/data/quirks.ts` + `src/dialogue/scene-texts.ts` + pure
   resolution effects.
-- **[TODO] F3.4** UI: burbuja genérica de escena (sustituye la ad-hoc de hambre de F2.4), panel
-  con acción de resolución, pipeline en `main.ts`. Tag `v01.00.F3` al cerrar en verde.
+- **[DONE] F3.4** UI: burbuja genérica de escena (sustituye la ad-hoc de hambre de F2.4), panel
+  con acción de resolución, pipeline en `main.ts`. Ver la sección "F3.4 - Generic
+  Scene UI (DONE)" más abajo para el detalle de cierre.
 
 ## F2.6 — 2D Visual Direction for Fable (art library DONE; pilot pending)
 

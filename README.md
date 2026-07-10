@@ -8,7 +8,11 @@ opcional**, no el motor del juego.
 > Regla que ordena todo: **el motor decide el estado; la IA embellece, resume o sugiere; la IA no manda sobre el núcleo.**
 
 ## Estado
-**Fase 0** — repo y documentación base. Scaffold web preparado; sin lógica de juego todavía.
+**Fase 5 cerrada** (tag `v01.00.F5`) — residentes, personalidad derivada, necesidades,
+Event Engine (escenas solo), relaciones (escenas sociales) e isla/economía (zonas,
+monedero, despensa, tienda, celebraciones de zona) están implementados, testeados
+(175 tests) y validados en vivo. Siguiente hito: **Fase 6** (capa de IA opcional).
+Ver [`CODEMAP.md`](CODEMAP.md) para el detalle por subfase.
 
 ## Stack
 - **TypeScript** + **Vite** + **Phaser 3** (2D; scenes/sprites/input/tweens/sound). Framework swappable (Pixi/React) si conviene.
@@ -23,14 +27,15 @@ Tú (coordinación + decisiones + probar diversión) + **Claude Code** como cons
 El comité multi-modelo queda en reserva hasta que el core loop esté validado y haya
 volumen de contenido que repartir. Ver la nota de la bóveda "Equipo de modelos LLM".
 
-## Objetivo del primer hito
+## Objetivo del primer hito (ya cumplido en F2)
 Un residente en una casa que tiene hambre, pide comida, reacciona y se guarda el
-resultado. Si esa microescena tiene gracia, el proyecto tiene base.
+resultado. Esa microescena funcionó y el proyecto siguió creciendo sobre ella.
 
-## Empezar (cuando arranque Fase 1)
+## Empezar
 ```bash
 npm install
 npm run dev      # servidor de desarrollo Vite
+npm test         # suite Vitest
 npm run build    # build de producción (PWA)
 ```
 
