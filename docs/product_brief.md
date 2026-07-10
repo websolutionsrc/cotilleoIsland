@@ -1,48 +1,48 @@
-# Product Brief — Cotilleo Island
+# Product Brief - Cotilleo Island
 
 ## Core fantasy
-Crear residentes personalizados que **parecen vivir a su aire** en una isla, y volver
-cada día a descubrir las escenas absurdas, amistades y conflictos que han surgido.
-Entretenimiento ligero, emergente y personalizado.
+Create custom residents who **seem to live independently** on an island, then return
+each day to discover the absurd scenes, friendships, and conflicts that have emerged.
+Light, emergent, personalized entertainment.
 
-## Problema de producto (no técnico)
-> ¿Podemos hacer que el jugador sienta curiosidad diaria por residentes simples pero expresivos?
+## Product problem (non-technical)
+> Can we make the player feel daily curiosity about simple but expressive residents?
 
-| Pregunta | Respuesta |
+| Question | Answer |
 |---|---|
-| ¿Qué resuelve? | Entretenimiento ligero, emergente y personalizado. |
-| ¿Qué señal entra? | Residentes, personalidad, necesidades, relaciones, objetos, historial. |
-| ¿Qué ruido hay? | Repetición, diálogos sin gracia. |
-| ¿Qué decide el sistema? | Qué escena ocurre, con quién, dónde, por qué y con qué consecuencia. |
-| ¿Qué salida da? | Una escena corta, divertida, jugable y persistente. |
+| What does it solve? | Light, emergent, personalized entertainment. |
+| What signal enters? | Residents, personality, needs, relationships, objects, history. |
+| What noise exists? | Repetition, unfunny dialogue. |
+| What does the system decide? | Which scene occurs, with whom, where, why, and with what consequence. |
+| What output does it produce? | A short, funny, playable, persistent scene. |
 
 ## Core loop
 ```
-Abrir isla → ver eventos pendientes → entrar en escena → un residente pide algo
-→ el jugador decide (comida, consejo, regalo, presentar...) → consecuencias
-→ cambian felicidad/relación/hambre/tensión/nivel/inventario → desbloqueos
-→ volver más tarde a por escenas nuevas
+Open island -> see pending events -> enter scene -> a resident asks for something
+-> player decides (food, advice, gift, introduction...) -> consequences
+-> happiness/relationship/hunger/tension/level/inventory change -> unlocks
+-> return later for new scenes
 ```
-La V1 debe medir si este loop engancha **antes** de invertir en IA avanzada.
+V1 must measure whether this loop engages players **before** investing in advanced AI.
 
-## Usuario y tono
-Juego personal/casual, humor ligero y situaciones absurdas. Admite guiños adultos
-(+18) vía eventos poco probables, sin que eso afecte a la arquitectura V1.
+## User and tone
+Personal/casual game, light humor, and absurd situations. It allows adult nods (+18)
+through unlikely events without affecting the V1 architecture.
 
-## Alcance V1 (resumen)
-Incluye: creación de residentes, isla simple + casas, necesidades, objetos/regalos,
-relaciones (amistad, tensión, **romance y matrimonio/convivencia**), eventos por reglas,
-diálogo por plantillas, niveles/desbloqueos, guardado local. Fuera: **bebés**,
-multijugador, red social, editor facial avanzado, IA conversacional libre, backend,
-voces, mundo abierto, 100 residentes, tienda pública.
+## V1 scope (summary)
+Includes: resident creation, simple island + houses, needs, objects/gifts,
+relationships (friendship, tension, **romance and marriage/cohabitation**), rule-based
+events, template dialogue, levels/unlocks, local saves. Out of scope: **babies**,
+multiplayer, social network, advanced face editor, free-form conversational AI,
+backend, voices, open world, 100 residents, public shop.
 
-> El romance/matrimonio entra en V1 como fuente de "salseo"; los bebés se aplazan hasta
-> validar que el core loop engancha.
+> Romance/marriage enters V1 as a source of "drama"; babies are postponed until the
+> core loop is validated.
 
-## Identidad propia (evitar IP de Nintendo)
-Nombre propio (Cotilleo Island), avatares modulares con estilo distinto (no Miis),
-UI/iconografía/sonidos propios, escenas y tono propios. Simplicidad primero.
+## Distinct identity (avoid Nintendo IP)
+Original name (Cotilleo Island), modular avatars with a distinct style (not Miis),
+original UI/icons/sounds, original scenes and tone. Simplicity first.
 
-## Métrica de éxito del primer hito
-Un residente tiene hambre, pide comida, reacciona y se guarda el resultado — y esa
-microescena **tiene gracia**.
+## First milestone success metric
+A resident gets hungry, asks for food, reacts, and saves the result - and that
+micro-scene **is funny**.

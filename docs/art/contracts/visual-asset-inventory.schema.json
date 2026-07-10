@@ -1,0 +1,136 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "cotilleo-island://art/visual-asset-inventory.schema.json",
+  "title": "Cotilleo Island visual asset inventory",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "release", "phase", "updated", "assets", "plannedFamilies", "tools"],
+  "properties": {
+    "$schema": { "type": "string", "minLength": 1 },
+    "schemaVersion": { "const": 1 },
+    "release": { "const": "v01.01" },
+    "phase": { "const": "F0" },
+    "updated": { "type": "string", "format": "date" },
+    "assets": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/asset" }
+    },
+    "plannedFamilies": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/plannedFamily" }
+    },
+    "tools": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/tool" }
+    }
+  },
+  "$defs": {
+    "ownerLane": {
+      "enum": ["human", "claude", "codex", "shared"]
+    },
+    "primaryOwner": {
+      "enum": ["human", "fable", "opus", "sonnet", "haiku", "sol", "terra", "luna", "codex"]
+    },
+    "humanDependency": {
+      "enum": ["none", "human_blocking", "human_approval"]
+    },
+    "asset": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id", "family", "role", "path", "status", "ownerLane", "primaryOwner",
+        "humanDependency", "sourceMethod", "runtimeUse", "notes"
+      ],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$" },
+        "family": {
+          "enum": [
+            "style_reference", "character_master", "character_pilot", "character_layer",
+            "environment", "building", "prop", "scene_ui", "app_icon"
+          ]
+        },
+        "role": { "type": "string", "minLength": 1 },
+        "path": { "type": "string", "pattern": "^[^\\\\]+$" },
+        "status": {
+          "enum": [
+            "draft", "rejected", "technically_valid", "runtime_valid",
+            "human_approved", "production"
+          ]
+        },
+        "ownerLane": { "$ref": "#/$defs/ownerLane" },
+        "primaryOwner": { "$ref": "#/$defs/primaryOwner" },
+        "humanDependency": { "$ref": "#/$defs/humanDependency" },
+        "nextHumanAction": { "type": "string", "minLength": 1 },
+        "sourceMethod": {
+          "enum": [
+            "user_reference", "image_generation", "edit_on_template", "local_cutout",
+            "runtime_copy", "code_generated"
+          ]
+        },
+        "masterId": { "type": ["string", "null"] },
+        "runtimeUse": { "type": "boolean" },
+        "technical": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["format", "width", "height", "bitDepth", "colorType", "alpha"],
+          "properties": {
+            "format": { "const": "png" },
+            "width": { "type": "integer", "minimum": 1 },
+            "height": { "type": "integer", "minimum": 1 },
+            "bitDepth": { "type": "integer", "enum": [8] },
+            "colorType": { "type": "integer", "enum": [2, 6] },
+            "alpha": { "type": "boolean" }
+          }
+        },
+        "notes": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "humanDependency": { "enum": ["human_blocking", "human_approval"] }
+            }
+          },
+          "then": { "required": ["nextHumanAction"] }
+        }
+      ]
+    },
+    "plannedFamily": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id", "family", "targetSubphase", "ownerLane", "primaryOwner",
+        "humanDependency", "gate", "deliverables"
+      ],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$" },
+        "family": { "type": "string", "minLength": 1 },
+        "targetSubphase": { "type": "string", "pattern": "^v01\\.01\\.F0\\.[0-7]$" },
+        "ownerLane": { "$ref": "#/$defs/ownerLane" },
+        "primaryOwner": { "$ref": "#/$defs/primaryOwner" },
+        "humanDependency": { "$ref": "#/$defs/humanDependency" },
+        "gate": { "type": "string", "minLength": 1 },
+        "deliverables": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "tool": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "path", "role", "ownerLane", "status"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$" },
+        "path": { "type": "string", "pattern": "^[^\\\\]+$" },
+        "role": { "type": "string", "minLength": 1 },
+        "ownerLane": { "$ref": "#/$defs/ownerLane" },
+        "status": { "enum": ["ad_hoc", "active", "fallback", "planned"] }
+      }
+    }
+  }
+}

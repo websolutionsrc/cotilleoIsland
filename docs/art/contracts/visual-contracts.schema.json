@@ -1,0 +1,93 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "cotilleo-island://art/visual-contracts.schema.json",
+  "title": "Cotilleo Island visual production contracts",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "release", "phase", "updated", "globalTokens", "families", "humanGates"],
+  "properties": {
+    "$schema": { "type": "string", "minLength": 1 },
+    "schemaVersion": { "const": 1 },
+    "release": { "const": "v01.01" },
+    "phase": { "const": "F0.1" },
+    "updated": { "type": "string", "format": "date" },
+    "globalTokens": { "$ref": "#/$defs/globalTokens" },
+    "families": {
+      "type": "array",
+      "minItems": 5,
+      "maxItems": 5,
+      "items": { "$ref": "#/$defs/family" }
+    },
+    "humanGates": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/humanGate" }
+    }
+  },
+  "$defs": {
+    "globalTokens": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["styleId", "colorSpace", "alphaRequired", "outline", "lighting", "shading", "protectedInvariants"],
+      "properties": {
+        "styleId": { "const": "storybook-with-volume-v1" },
+        "colorSpace": { "const": "srgb" },
+        "alphaRequired": { "const": true },
+        "outline": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["primary", "darkSkinEdge", "outerWidthAt128Px", "innerWidthAt128Px"],
+          "properties": {
+            "primary": { "const": "#402A20" },
+            "darkSkinEdge": { "const": "#5A3A2C" },
+            "outerWidthAt128Px": { "const": 3 },
+            "innerWidthAt128Px": { "type": "array", "prefixItems": [{ "const": 1.5 }, { "const": 2 }], "minItems": 2, "maxItems": 2 }
+          }
+        },
+        "lighting": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["direction", "angleDegrees", "temperature"],
+          "properties": {
+            "direction": { "const": "top_left" },
+            "angleDegrees": { "const": 30 },
+            "temperature": { "const": "golden_warm" }
+          }
+        },
+        "shading": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["celShadowMultiply", "celShadowOpacity", "volumeScreen", "volumeOpacity"],
+          "properties": {
+            "celShadowMultiply": { "const": "#6B4A38" },
+            "celShadowOpacity": { "const": 0.25 },
+            "volumeScreen": { "const": "#FFE9C7" },
+            "volumeOpacity": { "const": 0.12 }
+          }
+        },
+        "protectedInvariants": { "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 1 } }
+      }
+    },
+    "family": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "status", "blockedBy", "contract"],
+      "properties": {
+        "id": { "enum": ["character", "environment", "building", "icon", "scene"] },
+        "status": { "enum": ["frozen", "pending_human", "blocked_by_dependency"] },
+        "blockedBy": { "type": "array", "items": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$" } },
+        "contract": { "type": "object" }
+      }
+    },
+    "humanGate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "blocks", "decision", "owner"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$" },
+        "blocks": { "type": "array", "minItems": 1, "items": { "enum": ["character", "environment", "building", "icon", "scene"] } },
+        "decision": { "type": "string", "minLength": 1 },
+        "owner": { "const": "human" }
+      }
+    }
+  }
+}

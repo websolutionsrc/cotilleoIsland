@@ -1,0 +1,413 @@
+{
+  "$schema": "./contracts/visual-asset-inventory.schema.json",
+  "schemaVersion": 1,
+  "release": "v01.01",
+  "phase": "F0",
+  "updated": "2026-07-10",
+  "assets": [
+    {
+      "id": "style-ref-character-01",
+      "family": "style_reference",
+      "role": "Approved character style reference",
+      "path": "docs/art/references/c517439c-aa4e-449a-b74c-ab8ab37148d2.png",
+      "status": "human_approved",
+      "ownerLane": "human",
+      "primaryOwner": "human",
+      "humanDependency": "none",
+      "sourceMethod": "user_reference",
+      "runtimeUse": false,
+      "notes": ["Style reference only; never copied into runtime."]
+    },
+    {
+      "id": "style-ref-character-02",
+      "family": "style_reference",
+      "role": "Approved character style reference",
+      "path": "docs/art/references/download.png",
+      "status": "human_approved",
+      "ownerLane": "human",
+      "primaryOwner": "human",
+      "humanDependency": "none",
+      "sourceMethod": "user_reference",
+      "runtimeUse": false,
+      "notes": ["Style reference only; never copied into runtime."]
+    },
+    {
+      "id": "style-ref-character-03",
+      "family": "style_reference",
+      "role": "Approved character style reference",
+      "path": "docs/art/references/download2.png",
+      "status": "human_approved",
+      "ownerLane": "human",
+      "primaryOwner": "human",
+      "humanDependency": "none",
+      "sourceMethod": "user_reference",
+      "runtimeUse": false,
+      "notes": ["Style reference only; never copied into runtime."]
+    },
+    {
+      "id": "style-ref-character-04",
+      "family": "style_reference",
+      "role": "Approved character style reference",
+      "path": "docs/art/references/image-1783451889772.png",
+      "status": "human_approved",
+      "ownerLane": "human",
+      "primaryOwner": "human",
+      "humanDependency": "none",
+      "sourceMethod": "user_reference",
+      "runtimeUse": false,
+      "notes": ["Style reference only; never copied into runtime."]
+    },
+    {
+      "id": "style-ref-character-05",
+      "family": "style_reference",
+      "role": "Approved character style reference",
+      "path": "docs/art/references/image-1783451949057.png",
+      "status": "human_approved",
+      "ownerLane": "human",
+      "primaryOwner": "human",
+      "humanDependency": "none",
+      "sourceMethod": "user_reference",
+      "runtimeUse": false,
+      "notes": ["Style reference only; never copied into runtime."]
+    },
+    {
+      "id": "style-ref-character-06",
+      "family": "style_reference",
+      "role": "Approved character style reference",
+      "path": "docs/art/references/image-1783451952439.png",
+      "status": "human_approved",
+      "ownerLane": "human",
+      "primaryOwner": "human",
+      "humanDependency": "none",
+      "sourceMethod": "user_reference",
+      "runtimeUse": false,
+      "notes": ["Style reference only; never copied into runtime."]
+    },
+    {
+      "id": "style-ref-character-07",
+      "family": "style_reference",
+      "role": "Approved character style reference",
+      "path": "docs/art/references/image-1783451954906.png",
+      "status": "human_approved",
+      "ownerLane": "human",
+      "primaryOwner": "human",
+      "humanDependency": "none",
+      "sourceMethod": "user_reference",
+      "runtimeUse": false,
+      "notes": ["Style reference only; never copied into runtime."]
+    },
+    {
+      "id": "mara-task1-v1",
+      "family": "character_pilot",
+      "role": "Historical rejected base-body attempt",
+      "path": "docs/art/pilot/raw/task1_v1.png",
+      "status": "rejected",
+      "ownerLane": "shared",
+      "primaryOwner": "fable",
+      "humanDependency": "none",
+      "sourceMethod": "image_generation",
+      "runtimeUse": false,
+      "notes": ["Rejected for fake transparency and incorrect proportions."]
+    },
+    {
+      "id": "mara-task1-v2",
+      "family": "character_pilot",
+      "role": "Historical rejected base-body attempt",
+      "path": "docs/art/pilot/raw/task1_v2.png",
+      "status": "rejected",
+      "ownerLane": "shared",
+      "primaryOwner": "fable",
+      "humanDependency": "none",
+      "sourceMethod": "image_generation",
+      "runtimeUse": false,
+      "notes": ["Rejected because transparency remained baked into RGB pixels."]
+    },
+    {
+      "id": "mara-task1-v3",
+      "family": "character_pilot",
+      "role": "Unreviewed historical pilot attempt",
+      "path": "docs/art/pilot/raw/task1_v3.png",
+      "status": "draft",
+      "ownerLane": "shared",
+      "primaryOwner": "fable",
+      "humanDependency": "human_approval",
+      "nextHumanAction": "No action required unless this historical candidate is reconsidered.",
+      "sourceMethod": "image_generation",
+      "runtimeUse": false,
+      "notes": ["Kept for provenance; not an active master candidate."]
+    },
+    {
+      "id": "mara-pilot-v3",
+      "family": "character_pilot",
+      "role": "Historical dressed pilot reference",
+      "path": "docs/art/pilot/mara_pilot_v3.png",
+      "status": "draft",
+      "ownerLane": "shared",
+      "primaryOwner": "fable",
+      "humanDependency": "none",
+      "sourceMethod": "image_generation",
+      "runtimeUse": false,
+      "notes": ["Dressed Outfit A reference; not a registration body."]
+    },
+    {
+      "id": "mara-pilot-v4-style-anchor",
+      "family": "character_master",
+      "role": "Approved style anchor and historical runtime pilot",
+      "path": "docs/art/pilot/mara_pilot_v4.png",
+      "status": "human_approved",
+      "ownerLane": "shared",
+      "primaryOwner": "fable",
+      "humanDependency": "none",
+      "sourceMethod": "local_cutout",
+      "runtimeUse": false,
+      "technical": {
+        "format": "png",
+        "width": 1254,
+        "height": 1254,
+        "bitDepth": 8,
+        "colorType": 6,
+        "alpha": true
+      },
+      "notes": ["Official style anchor; dressed and therefore not the neutral paper-doll registration master."]
+    },
+    {
+      "id": "mara-v5-raw",
+      "family": "character_pilot",
+      "role": "Raw opaque source of the approved registration master",
+      "path": "docs/art/pilot/mara_v5.png",
+      "status": "draft",
+      "ownerLane": "shared",
+      "primaryOwner": "fable",
+      "humanDependency": "none",
+      "sourceMethod": "image_generation",
+      "runtimeUse": false,
+      "technical": {
+        "format": "png",
+        "width": 1254,
+        "height": 1254,
+        "bitDepth": 8,
+        "colorType": 2,
+        "alpha": false
+      },
+      "notes": [
+        "Opaque RGB source retained unchanged for provenance.",
+        "Its cutout (mara-v5-cutout-candidate) was human approved as registration master 2026-07-10; this raw file needs no further review."
+      ]
+    },
+    {
+      "id": "mara-v5-cutout-candidate",
+      "family": "character_master",
+      "role": "Neutral registration master (approved)",
+      "path": "docs/art/pilot/mara_v5_cutout.png",
+      "status": "human_approved",
+      "ownerLane": "shared",
+      "primaryOwner": "fable",
+      "humanDependency": "none",
+      "sourceMethod": "local_cutout",
+      "runtimeUse": false,
+      "technical": {
+        "format": "png",
+        "width": 1254,
+        "height": 1254,
+        "bitDepth": 8,
+        "colorType": 6,
+        "alpha": true
+      },
+      "notes": [
+        "Human approved 2026-07-10 as the v01.01.F0 neutral registration master, after Fable visual review: 96/128/256 px reads verified over stage color, residual fringe re-verified at exactly 7 px (dry-run), warm-brown outline and top-left lighting invariants pass, feet baseline measurable at y=1007.",
+        "Review findings for F0.2: define the head unit operationally before freezing anchors (measured head-with-hair ratio 0.507 vs contract 0.45); canonical hand-on-hip pose means upper-garment masks must respect the crossing forearm, and the free right hand is the primary held-item socket.",
+        "Anchors remain unmeasured; F0.2 measures and freezes them on this exact file without scaling or recropping."
+      ]
+    },
+    {
+      "id": "mara-v5-runtime-preview",
+      "family": "character_pilot",
+      "role": "Current live runtime preview of the approved master",
+      "path": "public/art/pilot/mara_v5.png",
+      "status": "runtime_valid",
+      "ownerLane": "codex",
+      "primaryOwner": "terra",
+      "humanDependency": "none",
+      "sourceMethod": "runtime_copy",
+      "masterId": "mara-v5-cutout-candidate",
+      "runtimeUse": true,
+      "technical": {
+        "format": "png",
+        "width": 1254,
+        "height": 1254,
+        "bitDepth": 8,
+        "colorType": 6,
+        "alpha": true
+      },
+      "notes": [
+        "Wired before the formal F0 pipeline; inventoried here without retroactively declaring it approved.",
+        "Underlying master human approved 2026-07-10; this copy remains a preview and is regenerated from the master, never edited directly."
+      ]
+    },
+    {
+      "id": "pwa-icon-180",
+      "family": "app_icon",
+      "role": "Apple touch icon derived from Mara v5",
+      "path": "public/icons/icon-180.png",
+      "status": "production",
+      "ownerLane": "claude",
+      "primaryOwner": "sonnet",
+      "humanDependency": "none",
+      "sourceMethod": "code_generated",
+      "runtimeUse": true,
+      "notes": ["v01.00.F7 distribution asset; distribution remains on standby."]
+    },
+    {
+      "id": "pwa-icon-192",
+      "family": "app_icon",
+      "role": "PWA 192 icon derived from Mara v5",
+      "path": "public/icons/icon-192.png",
+      "status": "production",
+      "ownerLane": "claude",
+      "primaryOwner": "sonnet",
+      "humanDependency": "none",
+      "sourceMethod": "code_generated",
+      "runtimeUse": true,
+      "notes": ["v01.00.F7 distribution asset; distribution remains on standby."]
+    },
+    {
+      "id": "pwa-icon-512",
+      "family": "app_icon",
+      "role": "PWA 512 icon derived from Mara v5",
+      "path": "public/icons/icon-512.png",
+      "status": "production",
+      "ownerLane": "claude",
+      "primaryOwner": "sonnet",
+      "humanDependency": "none",
+      "sourceMethod": "code_generated",
+      "runtimeUse": true,
+      "notes": ["v01.00.F7 distribution asset; distribution remains on standby."]
+    }
+  ],
+  "plannedFamilies": [
+    {
+      "id": "character-registration-master",
+      "family": "character_master",
+      "targetSubphase": "v01.01.F0.2",
+      "ownerLane": "shared",
+      "primaryOwner": "fable",
+      "humanDependency": "human_blocking",
+      "gate": "Human approves the neutral registration master.",
+      "deliverables": ["RGBA master", "measured anchors", "fixed canvas and baseline"]
+    },
+    {
+      "id": "character-garment-proof",
+      "family": "character_layer",
+      "targetSubphase": "v01.01.F0.2",
+      "ownerLane": "shared",
+      "primaryOwner": "terra",
+      "humanDependency": "human_approval",
+      "gate": "One edit-on-template garment composites without seams.",
+      "deliverables": ["garment layer", "allowed edit mask", "runtime composite preview"]
+    },
+    {
+      "id": "character-hair-proof",
+      "family": "character_layer",
+      "targetSubphase": "v01.01.F0.2",
+      "ownerLane": "shared",
+      "primaryOwner": "sonnet",
+      "humanDependency": "human_approval",
+      "gate": "Front/back hair pair preserves identity and alignment.",
+      "deliverables": ["hair back", "hair front", "tint proof"]
+    },
+    {
+      "id": "character-expression-proof",
+      "family": "character_layer",
+      "targetSubphase": "v01.01.F0.2",
+      "ownerLane": "shared",
+      "primaryOwner": "fable",
+      "humanDependency": "human_approval",
+      "gate": "Neutral and one reaction face preserve identity at runtime size.",
+      "deliverables": ["neutral expression", "reaction expression", "96 px review"]
+    },
+    {
+      "id": "island-environment-master",
+      "family": "environment",
+      "targetSubphase": "v01.01.F0.3",
+      "ownerLane": "shared",
+      "primaryOwner": "fable",
+      "humanDependency": "human_blocking",
+      "gate": "Human approves camera, perspective, density, and actor scale.",
+      "deliverables": ["code blockout", "environment master", "separated layer proof"]
+    },
+    {
+      "id": "building-kit-proof",
+      "family": "building",
+      "targetSubphase": "v01.01.F0.4",
+      "ownerLane": "shared",
+      "primaryOwner": "fable",
+      "humanDependency": "human_approval",
+      "gate": "One house and one shop share a reusable perspective contract.",
+      "deliverables": ["house pilot", "shop pilot", "state overlays"]
+    },
+    {
+      "id": "scene-language-proof",
+      "family": "scene_ui",
+      "targetSubphase": "v01.01.F0.5",
+      "ownerLane": "shared",
+      "primaryOwner": "terra",
+      "humanDependency": "human_approval",
+      "gate": "One solo and one social scene are readable end-to-end.",
+      "deliverables": ["solo staging", "social staging", "bubble/icon/reaction proof"]
+    },
+    {
+      "id": "motion-grammar-proof",
+      "family": "motion",
+      "targetSubphase": "v01.01.F0.5",
+      "ownerLane": "shared",
+      "primaryOwner": "sonnet",
+      "humanDependency": "human_approval",
+      "gate": "Human approves idle, movement, and reaction feel.",
+      "deliverables": ["idle tween", "walk bob", "reaction tween set"]
+    }
+  ],
+  "tools": [
+    {
+      "id": "mara-v5-cutout-tool",
+      "path": "tools/cutout/cutout-mara-v5.mjs",
+      "role": "Ad-hoc opaque-background removal for the Mara v5 source",
+      "ownerLane": "claude",
+      "status": "ad_hoc"
+    },
+    {
+      "id": "defringe-tool",
+      "path": "tools/defringe/defringe.mjs",
+      "role": "Dependency-free fringe detection and cleanup for RGBA PNG cutouts",
+      "ownerLane": "shared",
+      "status": "active"
+    },
+    {
+      "id": "mara-icon-tool",
+      "path": "tools/icon-gen/icon-from-mara.mjs",
+      "role": "Generate PWA icons from the current Mara source",
+      "ownerLane": "claude",
+      "status": "active"
+    },
+    {
+      "id": "fallback-icon-tool",
+      "path": "tools/icon-gen/generate-icon.mjs",
+      "role": "Generate dependency-free placeholder PWA icons",
+      "ownerLane": "claude",
+      "status": "fallback"
+    },
+    {
+      "id": "art-validator",
+      "path": "tools/art/validate-inventory.mjs",
+      "role": "Validate inventory structure, file existence, and declared PNG metadata",
+      "ownerLane": "codex",
+      "status": "active"
+    },
+    {
+      "id": "visual-contract-validator",
+      "path": "tools/art/validate-contracts.mjs",
+      "role": "Validate frozen visual tokens, family contracts, dependencies, and human gates",
+      "ownerLane": "codex",
+      "status": "active"
+    }
+  ]
+}

@@ -1,8 +1,8 @@
 # Estrategia de distribución — Cotilleo Island (web/PWA)
 
-## Estado (F7 - STANDBY)
+## Estado (v01.00.F7 - STANDBY)
 
-**User decision (2026-07-10):** F7 is intentionally paused. The repository keeps the
+**User decision (2026-07-10):** v01.00.F7 is intentionally paused. The repository keeps the
 PWA/install infrastructure already completed, but connecting Netlify and testing on a
 physical iPad are deferred until the user wants distribution. These manual steps do
 not block planning or building v1.1.
@@ -55,7 +55,7 @@ nativas no disponibles; los datos de un PWA pueden purgarse si el SO necesita es
 ## Backlog de rendimiento
 - El build actual emite un warning no bloqueante de Vite/Rollup por chunk JS grande
   (~1.5 MB sin comprimir, ~363 kB gzip), probablemente porque Phaser entra en el bundle
-  principal. No bloqueante para F7 (instalar y usar funciona igual); revisar con code
+  principal. No bloqueante para v01.00.F7 (instalar y usar funciona igual); revisar con code
   splitting/dynamic import o `manualChunks` si el rendimiento en Safari iPad real
   resulta un problema.
 

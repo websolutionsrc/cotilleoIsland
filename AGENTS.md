@@ -53,6 +53,9 @@ Las **specs técnicas viven en este repo** (`docs/`). La bóveda Obsidian
   **diseño/rediseño**, **código** y **validación**.
 - Antes de lanzar la tarea, recomendar modelo y grado de razonamiento (`low`,
   `medium`, `high` o equivalente en la herramienta usada), con una justificación breve.
+- Whenever a status update, handoff, or final response states the next step, immediately
+  follow it with the recommended model and reasoning level plus a brief justification.
+  Never leave a stated next step without an explicit model recommendation.
 - Decidir explícitamente si usar subagentes/paralelismo. Por defecto, no usarlos en
   tareas pequeñas, muy acopladas o con archivos compartidos.
 - Cada subfase debe tener criterio de aceptación, archivos permitidos/prohibidos y
@@ -61,14 +64,26 @@ Las **specs técnicas viven en este repo** (`docs/`). La bóveda Obsidian
   difíciles; razonamiento medio para core puro acotado; modelos pequeños/rápidos para
   contenido repetible, fixtures y transformaciones simples.
 
-## Operational language and logs
-- From v01.00.F3 onward, new operational logs, model-trace notes, commit messages/bodies,
-  validation summaries, implementation summaries, new tests and new technical docs should
-  be written in English.
+## Release-scoped phase branches
+- From v1.1 onward, phase numbers restart at F0 for every minor release.
+- Always write the release and phase together (`v01.01.F0`, not bare `F0`) in new
+  plans, handoffs, and current-status docs when ambiguity is possible.
+- Branch pattern: `develop/vX.Y/fN-short-name`, for example
+  `develop/v1.1/f0-visual-production`.
+- Phase milestone tag: `vXX.YY.FN`; final minor-release tag: `vXX.YY`.
+- Historical v1.0 branches, tags, and logs are not renamed.
+
+## Documentation language and logs
+- All project documentation and project notes must be written in English, including
+  repository docs, ADRs, plans, CODEMAP entries, handoffs, validation summaries, tests,
+  commit messages/bodies, model traces, and Cotilleo Island vault notes.
+- Translate existing Spanish documentation in dedicated, scoped documentation tasks.
+  Do not mix a broad historical translation with an unrelated feature change.
 - Prefer ASCII-safe operational text: avoid accents, smart punctuation and special
   symbols in handoffs/logs unless they are part of game-facing copy or an existing
   domain identifier.
-- Spanish user-facing game copy can remain Spanish when intentional.
+- All player-facing game copy must be written in Spanish, including UI labels, dialogue,
+  scene text, validation messages shown to players, and accessibility text.
 - Do not rename existing domain identifiers such as `sceneLog`; this rule is about
   human-written operational text, not persisted data shapes.
 - Do not mass-translate historical Spanish docs. Apply this rule to new work and to

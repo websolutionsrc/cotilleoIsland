@@ -10,6 +10,10 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:art": "node --test tools/art/inventory-lib.node-tests.mjs",
+    "art:validate": "node tools/art/validate-inventory.mjs",
+    "art:validate-contracts": "node tools/art/validate-contracts.mjs",
+    "test:art-contracts": "node --test tools/art/contract-lib.node-tests.mjs",
     "defringe": "node tools/defringe/defringe.mjs"
   },
   "dependencies": {

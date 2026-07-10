@@ -1,32 +1,31 @@
-# ADR 0001 — Stack web/PWA (TypeScript + Phaser), no Unity
+# ADR 0001 - Web/PWA stack (TypeScript + Phaser), not Unity
 
-- **Estado:** aceptada
-- **Fecha:** 2026-07-07
-- **Sustituye a:** la propuesta inicial de usar Unity+C# (descartada).
+- **Status:** accepted
+- **Date:** 2026-07-07
+- **Supersedes:** the initial Unity+C# proposal (rejected).
 
-## Contexto
-Juego 2D casual tipo Tomodachi, target iPad, **sin Mac disponible**. Compilar una app
-iOS con Unity/Swift requiere macOS+Xcode o Unity Build Automation (de pago, + cuenta
-Apple Developer). Es decir: el mayor bloqueo (no-Mac) golpea justo la parte iPad-nativa
-de Unity, que era su principal ventaja aquí.
+## Context
+Casual 2D game in the Tomodachi style, targeting iPad, with **no Mac available**.
+Building an iOS app with Unity/Swift requires macOS+Xcode or Unity Build Automation
+(paid, plus an Apple Developer account). In other words, the biggest blocker (no Mac)
+directly affects Unity's iPad-native side, which was its main advantage here.
 
-## Decisión
-Construir el juego como **web app (PWA)** con **TypeScript + Vite + Phaser 3**,
-persistencia local en **IndexedDB**, instalable en el iPad vía "Añadir a pantalla de inicio".
+## Decision
+Build the game as a **web app (PWA)** with **TypeScript + Vite + Phaser 3**, using local
+persistence in **IndexedDB**, installable on iPad via "Add to home screen".
 
-## Motivos
-- Llega al iPad **sin Mac, sin Xcode y sin build cloud de pago**.
-- Iteración muy rápida; validar en escritorio y en Safari iPad con el mismo build.
-- Tomodachi es UI + escenas 2D (no acción/física exigente): la web cubre de sobra.
-- Camino de salida a App Store si hiciera falta: envolver con Capacitor/PWABuilder.
+## Reasons
+- Reaches iPad **without a Mac, Xcode, or paid cloud build**.
+- Very fast iteration; validate on desktop and Safari iPad with the same build.
+- Tomodachi is UI + 2D scenes (not demanding action/physics): the web is more than sufficient.
+- Exit path to the App Store if needed: wrap with Capacitor/PWABuilder.
 
-## Alternativas consideradas
-- **Unity + Build Automation**: app nativa real, pero caro/lento y con la fricción de
-  firma/cuenta Apple justo en el punto bloqueado.
-- **Godot**: gratis y exporta, pero mismo problema de firma iOS sin Mac.
+## Alternatives considered
+- **Unity + Build Automation**: real native app, but expensive/slow and introduces signing/Apple account friction at the blocked point.
+- **Godot**: free and exports, but has the same iOS signing problem without a Mac.
 
-## Consecuencias
-- Lógica de simulación **pura** y desacoplada de Phaser (testeable, portable).
-- Vigilar cuota de almacenamiento y rendimiento en Safari iPad; usar
-  `navigator.storage.persist()` y export/import manual como red de seguridad.
-- La distribución en App Store queda **aplazada** (ver `distribution_strategy.md`).
+## Consequences
+- Simulation **pure logic** decoupled from Phaser (testable, portable).
+- Monitor storage quota and performance in Safari iPad; use `navigator.storage.persist()`
+  and manual export/import as a safety net.
+- App Store distribution is **postponed** (see `distribution_strategy.md`).

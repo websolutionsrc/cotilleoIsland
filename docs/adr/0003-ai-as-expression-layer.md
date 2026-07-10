@@ -1,26 +1,27 @@
-# ADR 0003 — IA como capa de expresión, no como motor
+# ADR 0003 - AI as an expression layer, not the engine
 
-- **Estado:** aceptada
-- **Fecha:** 2026-07-07
+- **Status:** accepted
+- **Date:** 2026-07-07
 
-## Contexto
-La tentación es "hacer Tomodachi Life con IA". El riesgo es que la IA se vuelva el motor,
-con coste, latencia, imprevisibilidad y difícil testeo.
+## Context
+The temptation is to "make Tomodachi Life with AI". The risk is that AI becomes the
+engine, with cost, latency, unpredictability, and difficult testing.
 
-## Decisión
-El **motor de reglas decide el estado**; la IA solo **expresa** ese estado (diálogos,
-narrador, resúmenes, muletillas), **siempre detrás de interfaces** y con **fallback** sin IA.
+## Decision
+The **rule engine decides state**; AI only **expresses** that state (dialogue,
+narration, summaries, catchphrases), **always behind interfaces** and with a no-AI
+**fallback**.
 ```
-Reglas → SceneIntent → IA opcional → texto validado → escena
+Rules -> SceneIntent -> optional AI -> validated text -> scene
 ```
 
-## Motivos
-- Determinismo y testeabilidad del core.
-- La IA debe ser reemplazable por plantillas.
-- Control de coste/latencia y privacidad.
+## Reasons
+- Deterministic, testable core.
+- AI must be replaceable by templates.
+- Cost, latency, and privacy control.
 
-## Consecuencias
-- Todo consumo de IA usa `SceneIntent` minimizado, salida JSON validada, caché,
-  presupuesto por sesión y rate limit (ver `ai_usage_policy.md`).
-- `IEventSuggestor` propone, `EventEngine` valida, `GameState` aplica.
-- Sin agentes autónomos dentro del juego en V1/MVP.
+## Consequences
+- All AI usage sends minimized `SceneIntent`, validated JSON output, cache, a per-session
+  budget, and rate limit (see `ai_usage_policy.md`).
+- `IEventSuggestor` proposes, `EventEngine` validates, `GameState` applies.
+- No autonomous agents inside the game in V1/MVP.

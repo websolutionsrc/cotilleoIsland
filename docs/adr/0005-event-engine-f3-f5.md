@@ -1,51 +1,52 @@
-# ADR 0005 — Motor F3-F5: Event Engine, relaciones y progreso diseñados juntos
+# ADR 0005 - F3-F5 engine: Event Engine, relationships, and progression designed together
 
-- **Estado:** aceptada
-- **Fecha:** 2026-07-07
-- **Autoría:** diseño por Fable 5 (sesión interactiva); construcción prevista por
-  Sonnet/Codex por subfases. Diseño completo en `docs/engine_design_f3-f5.md`.
+- **Status:** accepted
+- **Date:** 2026-07-07
+- **Authorship:** designed by Fable 5 (interactive session); planned construction by
+  Sonnet/Codex in subphases. Full design in `docs/engine_design_f3-f5.md`.
 
-## Contexto
-Cada fase anterior subió el esquema de guardado sobre la marcha (v1→v2→v3). Antes de
-construir F3 (Event Engine) se diseñan juntas F3+F4+F5 para que el modelo de datos sea
-coherente, las migraciones previsibles (v4/v5/v6) y F4/F5 no obliguen a reescribir F3.
+## Context
+Each previous phase raised the save schema as it went (v1->v2->v3). Before building F3
+(Event Engine), F3+F4+F5 were designed together so that the data model is coherent,
+migrations are predictable (v4/v5/v6), and F4/F5 do not require rewriting F3.
 
-## Decisiones clave
+## Key decisions
 
-1. **Regla derivado-vs-persistido**: *derivado si no tiene memoria; persistido si una
-   transición depende de la historia*. Generaliza el ADR 0004 y decide cada campo nuevo
-   (chemistry pura; sceneLog/stats/status/wallet persistidos).
-2. **`SceneIntent` efímero** — se recalcula al abrir; nunca se guarda. Sin `tone` (deriva
-   de `personalityToTags`), sin `result_options` (la acción del jugador es la resolución).
-3. **`participants: ResidentId[]` desde F3** aunque F3 use 1: el `sceneLog` persistido
-   nace con la forma que F4 necesita (cooldowns por conjunto de participantes) y el motor
-   no cambia de contrato al llegar las escenas sociales.
-4. **Cooldown duro** con una única excepción (hambre urgente ≥ 90), no penalización
-   blanda en el score. Score = `urgency × pesoTipo`, quirk con score fijo 35.
-5. **`SaveState` v4 = `sceneLog` (cap 20) + `stats.scenesResolved`**. El contador entra
-   ya porque no es reconstruible a posteriori y F5 lo usa para desbloqueos.
-6. **F4**: `Relationship` persiste `{a<b, friendship, tension, romance, status,
-   lastInteractionAtMs}`; `status` con transiciones SOLO por escena resuelta (histéresis);
-   `chemistry` es función pura no persistida. Sin `trust`, sin historia textual.
-7. **F5**: economía mínima (ganar resolviendo escenas, gastar en tienda/regalos);
-   `wallet + unlockedZoneIds + pantry` en v6; zonas como catálogo fijo evaluado al abrir.
+1. **Derived-versus-persisted rule**: *derived when it has no memory; persisted when a
+   transition depends on history*. This generalizes ADR 0004 and determines every new
+   field (`chemistry` is pure; `sceneLog`/`stats`/`status`/`wallet` are persisted).
+2. **Ephemeral `SceneIntent`** - recalculated on opening; never saved. No `tone` (it is
+   derived from `personalityToTags`) and no `result_options` (the player action is the
+   resolution).
+3. **`participants: ResidentId[]` from F3** even though F3 uses one participant: the
+   persisted `sceneLog` begins with the shape F4 needs (cooldowns per participant set),
+   and the engine contract does not change when social scenes arrive.
+4. **Hard cooldown** with one exception (urgent hunger >= 90), not a soft score penalty.
+   Score = `urgency x typeWeight`; quirk has fixed score 35.
+5. **`SaveState` v4 = `sceneLog` (cap 20) + `stats.scenesResolved`**. The counter enters
+   immediately because it cannot be reconstructed later and F5 uses it for unlocks.
+6. **F4**: `Relationship` persists `{a<b, friendship, tension, romance, status,
+   lastInteractionAtMs}`; `status` transitions ONLY through a resolved scene (hysteresis);
+   `chemistry` is a non-persisted pure function. No `trust`, no textual history.
+7. **F5**: minimum economy (earn by resolving scenes, spend in shop/gifts);
+   `wallet + unlockedZoneIds + pantry` in v6; zones are a fixed catalog evaluated on opening.
 
-## Alternativas descartadas
+## Alternatives discarded
 
-| Alternativa | Por qué se descartó |
+| Alternative | Why it was discarded |
 |---|---|
-| Motor de reglas data-driven (JSON de condiciones) | Indirection sin beneficio con 5-12 tipos de escena; las reglas son funciones TS con nombre y tests (patrón `needs.ts`) |
-| Persistir la escena activa | Estado rancio tras cambios de needs/reloj; recalcular al abrir es idempotente y ahorra una migración |
-| `residentId` único en `SceneIntent`/log y migrar en F4 | Migración v4→v5 del log + refactor de firmas del motor, evitables por el coste de un array de 1 elemento |
-| `trust` como eje separado de relación | Colineal con `friendship` a escala ≤12 residentes; cada campo persistido es deuda de migración |
-| `status` derivado de umbrales de friendship/romance | Ser pareja es un hito con histéresis, no un bucketing: derivado oscilaría al fluctuar los valores; se persiste y solo transiciona por evento |
-| Penalización blanda por repetición en el score | Inexplicable al depurar ("¿por qué salió esto?"); el cooldown duro es binario, testeable y suficiente |
-| Contadores/wallet pospuestos a F5 sin `stats` en v4 | `scenesResolved` no es reconstruible; una línea en v4 compra histórico real desde F3 |
+| Data-driven rule engine (JSON conditions) | Indirection with no benefit for 5-12 scene types; rules are named, tested TS functions (`needs.ts` pattern) |
+| Persist the active scene | State becomes stale after changes to needs/clock; recalculating on opening is idempotent and avoids a migration |
+| Single `residentId` in `SceneIntent`/log and migrate in F4 | Avoidable v4->v5 log migration and engine-signature refactor for the cost of a single-element array |
+| `trust` as a separate relationship axis | Collinear with `friendship` at <=12 residents; every persisted field is migration debt |
+| `status` derived from friendship/romance thresholds | Being a couple is a hysteresis milestone, not bucketing: a derived value would oscillate when values change; it is persisted and transitions only through events |
+| Soft repetition penalty in the score | Hard to explain when debugging ("why did this happen?"); hard cooldown is binary, testable, and sufficient |
+| Postpone counters/wallet to F5 without `stats` in v4 | `scenesResolved` cannot be reconstructed; one v4 line buys real history from F3 |
 
-## Consecuencias
-- F3 construible en días (4 subfases, ver diseño §8); F4/F5 solo añaden detectores,
-  campos con default y una firma (`resolveScene` devuelve `reward` en F5).
-- Nuevos guards obligatorios en F3.2: no degradar guardados con `schemaVersion` mayor a
-  la actual y clamp de timestamps futuros (reloj del dispositivo cambiado).
-- `docs/scene_intent_spec.md` se reescribe como contrato V1 real (la versión anterior
-  era aspiracional y contradecía el ADR 0004).
+## Consequences
+- F3 can be built in days (4 subphases, see design section 8); F4/F5 only add detectors,
+  fields with defaults, and one signature (`resolveScene` returns `reward` in F5).
+- New mandatory guards in F3.2: do not degrade saves with `schemaVersion` higher than the
+  current version, and clamp future timestamps (device clock changed).
+- `docs/scene_intent_spec.md` is rewritten as the real V1 contract (the previous version
+  was aspirational and contradicted ADR 0004).

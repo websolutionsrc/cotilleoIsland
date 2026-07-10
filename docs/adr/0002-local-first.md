@@ -1,23 +1,23 @@
-# ADR 0002 — Local-first, sin backend en V1
+# ADR 0002 - Local-first, no backend in V1
 
-- **Estado:** aceptada
-- **Fecha:** 2026-07-07
+- **Status:** accepted
+- **Date:** 2026-07-07
 
-## Contexto
-El juego puede contener personajes basados en personas reales. Queremos validar el
-gameplay rápido y sin costes/infra ni riesgos de privacidad.
+## Context
+The game may contain characters based on real people. We want to validate gameplay
+quickly, without infrastructure costs or privacy risks.
 
-## Decisión
-V1 **local-first**: sin backend, sin cuentas, guardado local en **IndexedDB** (localForage)
-con esquema versionado, export/import manual (JSON). IA cloud desactivada por defecto o
-claramente explicada.
+## Decision
+V1 is **local-first**: no backend, no accounts, local saves in **IndexedDB** (localForage)
+with a versioned schema, manual export/import (JSON). Cloud AI is disabled by default or
+clearly explained.
 
-## Motivos
-- Privacidad de personajes reales (nada se sube por defecto).
-- Menos complejidad; validar el core loop antes de invertir en infra.
-- Sin dependencia de red para funcionar.
+## Reasons
+- Privacy for real-person characters (nothing is uploaded by default).
+- Less complexity; validate the core loop before investing in infrastructure.
+- No network dependency for the game to work.
 
-## Consecuencias
-- Si más adelante se usa IA cloud: enviar solo `SceneIntent` minimizado, opción de
-  anonimizar (`Resident A/B`), log de envíos, modo solo-local siempre disponible.
-- Sincronización/compartir quedan para fases avanzadas.
+## Consequences
+- If cloud AI is used later: send only minimized `SceneIntent`, with an anonymization
+  option (`Resident A/B`), a send log, and a local-only mode always available.
+- Synchronization/sharing are deferred to advanced phases.

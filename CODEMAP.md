@@ -1,16 +1,20 @@
 # CODEMAP — Cotilleo Island
 
-Mapa de módulos. Estado actual: Fase 5 cerrada (tag `v01.00.F5`); ver la tabla de
+Mapa de módulos. Estado actual: Fase 5 cerrada (tag `v01.00.F5`), `v01.00.F7`
+distribution en STANDBY y `v01.01.F0` visual preproduction en curso; F0.0 inventory
+and production map is complete. Ver la tabla de
 módulos justo abajo para el resumen, y las secciones "Fase N" más adelante en este
 documento para el detalle de cierre de cada subfase (orden de aparición: no es
 estrictamente cronológico, cada sección lleva su propio estado `[DONE]`/`[TODO]`).
 
 ## Metodología Git por fases
-- Trabajar cada fase en una rama dedicada con patrón `develop/fN-nombre-corto`
-  (ej. `develop/f2-needs-food-loop`).
-- Al cerrar una fase, hacer un commit de hito y crear un tag `v01.00.FN` sobre el commit
-  verificado (ej. `v01.00.F1` marca el cierre de Fase 1). Reservar `v01.00` para el
-  cierre completo de V1; no usar tags con slash para hitos de fase.
+- Para v1.1 y posteriores, trabajar cada fase en una rama dedicada con patron
+  `develop/vX.Y/fN-nombre-corto` (ej. `develop/v1.1/f0-visual-production`). Las ramas
+  historicas de v1.0 conservan sus nombres originales y no se renombran.
+- Al cerrar una fase, hacer un commit de hito y crear el tag de su linea de release
+  sobre el commit verificado. Todas las fases de v1.1, incluida la preproduccion F0,
+  usan `v01.01.FN`; `v01.01` se reserva para el cierre completo de la release.
+  No usar tags con slash para hitos de fase.
 - Antes de empezar la siguiente fase, pasar pre-flight: `CODEMAP.md`/docs alineados,
   tests y build en verde, y dossier del vault actualizado con `[DONE]`/`[TODO]`.
 - Mantener el scope de la rama centrado en la fase; no mezclar features futuras salvo
@@ -36,11 +40,29 @@ estrictamente cronológico, cada sección lleva su propio estado `[DONE]`/`[TODO
 | **Relationships** | `src/relationships/` | `types/key/chemistry/status/decay/apply` — core puro: par normalizado `a<b`, `chemistry` (proyección pura), máquina de estados con guardas, decaimiento, `applyRelationshipAction` (deltas+status en un punto) | **F4 fully DONE (F4.1-F4.4), tagged v01.00.F4** |
 | **Events** | `src/events/` | `types/rng/detectors/cooldowns/select/resolve/resolve-social/reward` — pipeline puro detect→cooldown→score→select, `SceneIntent` efímera (solo + social + `zone_opening`), `sceneLog` cap 20, recompensa de monedas (F5.1) | **F3+F4+F5 DONE** |
 | **Dialogue** | `src/dialogue/` | V1: plantillas (`food-reactions.ts`, `scene-texts.ts` solo+social+zone_opening); V2: IA (`DialogueGenerator`) | **DONE for F3+F4+F5.3 scene types** |
-| **AI** (opcional) | `src/ai/` | DialogueEnhancer, DailyNarrator, MemorySummarizer, CatchphraseGenerator, EventSuggestor validado | pendiente (F6) |
+| **AI** (opcional) | `src/ai/` | DialogueEnhancer, DailyNarrator, MemorySummarizer, CatchphraseGenerator, EventSuggestor validado | `v01.00.F6` skipped/on hold; not part of v1.1 |
 | **Save** | `src/save/` | `StoragePort` (`IndexedDbStorage` / `InMemoryStorage`) + `SaveSystem` (CRUD de residentes, `SaveState` v7 versionado, migración, decaimiento de mundo, escenas F3+F4+F5.3, `buyFood`/`giveFoodFromPantry`) | **v7 DONE** |
 | **UI** | `src/ui/` | `IslandScene` (Phaser) + `resident-panel` (overlay DOM: crear/editar residente, multi-residente, personalidad, comida, escenas solo+sociales+zone_opening, monedero, tienda, despensa) | **F4.4+F5.4 DONE - F5 fully closed** |
 | **Data** | `src/data/` | Catálogo de comidas (`foods.json`, ahora con `price`) + validación (`foods.ts`), quirks (`quirks.ts`), zonas (`zones.ts`, F5.1+F5.3) | **F5.1+F5.3 DONE** |
-| **Visual direction** | `docs/art_library.md` + `docs/art/references/` + future `public/art/` | 2D art library: characters, outfits, environments, scene language, asset export rules and delegation guidelines so other models can produce visual work without touching the core | **F2.6 art library DONE (ADR 0006, Direction B "Storybook with volume"); pilot asset pass pending before mass batches** |
+| **Visual production** | `docs/art_library.md` + `docs/art/` + `tools/art/` + future `src/data/art/`, `public/art/` | v1.1 F0 preproduction: frozen masters/contracts, character/environment/building/scene pilots, generation provenance, automated QA and runtime previews | **`v01.01.F0` IN PROGRESS; F0.0 DONE; see `docs/art/v1_1_f0_visual_production_plan.md`** |
+
+## Planned next work - v1.1 F0-F7
+
+- **F0** visual production foundation (IN PROGRESS; F0.0 inventory and validator DONE);
+- **F1** customizable modular residents;
+- **F2** island, houses, and navigation;
+- **F3** resident movement and ambient presentation;
+- **F4** shops, clothing, gifts, and objects;
+- **F5** scene presentation and relationship readability;
+- **F6** content production and polish;
+- **F7** save safety, performance, and release hardening.
+
+Sources of truth:
+
+- `docs/art/v1_1_f0_visual_production_plan.md`
+- `docs/v1_1_plan.md`
+
+Historical `v01.00.F7` Netlify/iPad actions remain STANDBY and do not block this roadmap.
 
 ## Fase 4 - Relationships (F4.1-F4.4 done, phase closed)
 Design in `docs/engine_design_f3-f5.md` section 3. Branch `develop/f4-relationships`
@@ -421,14 +443,14 @@ pattern:
 - Model: Sonnet (construction on an already-closed design, matches AGENTS.md
   rubric).
 
-## Fase 7 - Distribucion [STANDBY by user decision]
-No closed design doc for F7 like F3-F5 had (`engine_design_f3-f5.md` only
+## v01.00.F7 - Distribucion [STANDBY by user decision]
+No closed design doc for v01.00.F7 like F3-F5 had (`engine_design_f3-f5.md` only
 covers the engine, not distribution) - scoped directly from `docs/distribution_strategy.md`
 and the roadmap line ("build PWA, probar en Safari iPad, valorar wrapper App Store").
-F6 (MVP IA opcional) was skipped for now by explicit user choice - shipping the
+v01.00.F6 (MVP IA opcional) was skipped for now by explicit user choice - shipping the
 game as-is takes priority over the AI layer.
 
-On 2026-07-10 the user placed F7 on **STANDBY** because iPad deployment is not a
+On 2026-07-10 the user placed v01.00.F7 on **STANDBY** because iPad deployment is not a
 current priority. The completed manifest/service-worker/icon/Netlify infrastructure
 is preserved. Connecting Netlify and testing on a physical iPad are intentionally
 deferred and do not block v1.1 work.
@@ -473,7 +495,7 @@ deferred and do not block v1.1 work.
 - **What is NOT done and is now intentionally deferred (STANDBY)**: connecting the GitHub
   repo to Netlify (external account action - the user's to do) and actually
   testing "Add to Home Screen" on a real iPad in Safari (no physical device
-  access). `docs/distribution_strategy.md`'s "Estado (F7 - STANDBY)" section lists
+  access). `docs/distribution_strategy.md`'s "Estado (v01.00.F7 - STANDBY)" section lists
   both as explicit manual next steps, not silently assumed done.
 - 175 tests still green (no core logic touched, this subfase is
   infra/docs), build clean.

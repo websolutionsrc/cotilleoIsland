@@ -1,0 +1,161 @@
+{
+  "$schema": "./visual-contracts.schema.json",
+  "schemaVersion": 1,
+  "release": "v01.01",
+  "phase": "F0.1",
+  "updated": "2026-07-10",
+  "globalTokens": {
+    "styleId": "storybook-with-volume-v1",
+    "colorSpace": "srgb",
+    "alphaRequired": true,
+    "outline": {
+      "primary": "#402A20",
+      "darkSkinEdge": "#5A3A2C",
+      "outerWidthAt128Px": 3,
+      "innerWidthAt128Px": [1.5, 2]
+    },
+    "lighting": {
+      "direction": "top_left",
+      "angleDegrees": 30,
+      "temperature": "golden_warm"
+    },
+    "shading": {
+      "celShadowMultiply": "#6B4A38",
+      "celShadowOpacity": 0.25,
+      "volumeScreen": "#FFE9C7",
+      "volumeOpacity": 0.12
+    },
+    "protectedInvariants": [
+      "Never use pure black outlines.",
+      "Never bake generated text into bitmap assets.",
+      "Never change identity, pose, canvas, lighting, or protected pixels during a constrained edit.",
+      "Every production bitmap must use true alpha rather than painted transparency.",
+      "Player-facing text remains a separate Spanish runtime layer."
+    ]
+  },
+  "families": [
+    {
+      "id": "character",
+      "status": "pending_human",
+      "blockedBy": ["character-composed-pilot-approval"],
+      "contract": {
+        "sourceCanvas": { "width": 1254, "height": 1254, "unit": "px", "fixed": true },
+        "runtimeReviewHeights": [96, 128, 256],
+        "proportions": { "totalHeads": 2.7, "headHeightRatio": 0.45, "headWidthToHeight": 1.05 },
+        "zOrder": [
+          "body_base", "tattoo", "face_expression", "skin_detail", "lower_garment",
+          "upper_garment", "outer_layer", "shoes", "hair_back", "hair_front",
+          "headwear", "accessory"
+        ],
+        "anchors": {
+          "coordinateSpace": "source_canvas_pixels",
+          "feetBaselineY": null,
+          "headPivot": null,
+          "leftHandSocket": null,
+          "rightHandSocket": null,
+          "chestSocket": null,
+          "resolutionRule": "Registration master approved 2026-07-10 (docs/art/pilot/mara_v5_cutout.png). F0.2 measures these anchors on that exact file and freezes them without scaling or recropping the source canvas. Review reference: feet baseline observed at y=1007; define the head unit (skull vs hair box) before freezing headPivot."
+        },
+        "allowedEditTargets": ["garment_mask", "hair_mask", "expression_mask", "accessory_mask", "tattoo_mask"],
+        "editInvariants": ["identity", "body_pose", "canvas", "baseline", "lighting", "unmasked_pixels"],
+        "naming": {
+          "body": "body_s{01-10}.png",
+          "face": "face_{state}.png",
+          "hair": "hair_{id}_{back|front}.png",
+          "garment": "garment_{slot}_{id}.png",
+          "tattoo": "tattoo_{id}.png"
+        }
+      }
+    },
+    {
+      "id": "environment",
+      "status": "pending_human",
+      "blockedBy": ["island-camera-approval"],
+      "contract": {
+        "camera": {
+          "projection": null,
+          "pitchDegrees": null,
+          "horizonRatio": null,
+          "resolutionRule": "Freeze from a code-native island blockout approved with resident-scale overlays."
+        },
+        "depthBands": ["background", "midground", "foreground"],
+        "palette": { "ground": "#C4714B", "grass": "#7FA65A" },
+        "backgroundAdjustment": { "saturationDelta": -0.2, "lightnessDelta": 0.1, "outlineWidthPx": 1.5 },
+        "safeZones": [
+          "No high-contrast pattern behind a resident head zone.",
+          "Paths and interaction markers must remain readable at 96 px resident height.",
+          "Terrain, vegetation, buildings, props, and shadows remain separate layers."
+        ]
+      }
+    },
+    {
+      "id": "building",
+      "status": "blocked_by_dependency",
+      "blockedBy": ["island-camera-approval", "building-silhouette-approval"],
+      "contract": {
+        "modules": ["base", "roof", "door", "window", "sign", "decoration", "shadow"],
+        "states": ["locked", "open", "selected", "scene_pending"],
+        "invariants": [
+          "Use the frozen environment perspective and light direction.",
+          "Use rounded storybook silhouettes without hard rectangular corners.",
+          "Keep signs and Spanish UI labels outside generated bitmaps.",
+          "A house and a shop must share the same placement and state contract."
+        ]
+      }
+    },
+    {
+      "id": "icon",
+      "status": "frozen",
+      "blockedBy": [],
+      "contract": {
+        "baseSizePx": 64,
+        "exportSizePx": 128,
+        "alpha": true,
+        "outlineColor": "#402A20",
+        "grammar": ["one_concept", "thick_outline", "no_bitmap_text", "readable_at_base_size"],
+        "naming": "icon_{name}.png"
+      }
+    },
+    {
+      "id": "scene",
+      "status": "blocked_by_dependency",
+      "blockedBy": ["island-camera-approval", "scene-composition-approval"],
+      "contract": {
+        "templates": ["solo_centered", "social_facing", "argument", "reconciliation", "romance", "gift", "celebration"],
+        "bubble": { "fill": "#FFFFFF", "outline": "#402A20", "outlineWidthPx": 3, "shape": "rounded", "tailTarget": "speaker_head" },
+        "motion": ["idle_breathe", "walk_bob", "hop", "shake", "tilt", "settle", "arrival", "reaction"],
+        "invariants": [
+          "Use static actor composites plus Phaser tweens in v1.1 F0.",
+          "Dialogue and labels are separate Spanish runtime text.",
+          "One solo and one social template must be proven at runtime before expansion."
+        ]
+      }
+    }
+  ],
+  "humanGates": [
+    {
+      "id": "character-composed-pilot-approval",
+      "blocks": ["character"],
+      "decision": "Approve the complete composed character pilot (body + garment + hair + expression, composited at runtime sizes). The registration master itself (Mara v5 cutout) was human approved 2026-07-10; F0.2 measures anchors on it and builds the layer proofs toward this gate.",
+      "owner": "human"
+    },
+    {
+      "id": "island-camera-approval",
+      "blocks": ["environment", "building", "scene"],
+      "decision": "Approve island projection, pitch, horizon, density, and resident scale from the runtime blockout.",
+      "owner": "human"
+    },
+    {
+      "id": "building-silhouette-approval",
+      "blocks": ["building"],
+      "decision": "Approve the shared house and shop silhouette language.",
+      "owner": "human"
+    },
+    {
+      "id": "scene-composition-approval",
+      "blocks": ["scene"],
+      "decision": "Approve solo and social staging, bubble placement, and actor scale.",
+      "owner": "human"
+    }
+  ]
+}
