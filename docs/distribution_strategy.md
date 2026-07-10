@@ -1,5 +1,23 @@
 # Estrategia de distribución — Cotilleo Island (web/PWA)
 
+## Estado (F7)
+- **[DONE]** Manifest válido servido en build de producción, service worker
+  activo (`npm run preview`, verificado en el navegador). Iconos placeholder
+  generados (`tools/icon-gen/`, ver nota abajo) para `manifest.webmanifest`
+  (192/512) y `apple-touch-icon` (180, requerido aparte por iOS Safari - no
+  lee los iconos del manifest para "Añadir a pantalla de inicio").
+- **[DONE]** `netlify.toml` en la raíz del repo (build `npm run build`,
+  publish `dist`, fallback SPA, cache-control del service worker).
+- **[TODO - acción manual del usuario]** Conectar el repo de GitHub a Netlify
+  (Netlify detecta `netlify.toml` automáticamente al importar el repo) y
+  obtener la URL HTTPS real.
+- **[TODO - acción manual del usuario]** Probar "Añadir a pantalla de inicio"
+  en un iPad real con Safari: esto no se puede verificar desde aquí (sin
+  acceso a un iPad físico); solo se validó que el manifest/service
+  worker/iconos son correctos en un navegador de escritorio.
+- **[TODO]** Sustituir el icono placeholder por uno real cuando el piloto de
+  arte (Mara) cierre y exista una dirección de icono de app.
+
 ## Decisión
 El juego es una **PWA** (web app instalable). Esto encaja con el constraint principal
 (**no tener Mac**): no requiere macOS, Xcode ni build cloud de pago para llegar al iPad.
@@ -18,14 +36,20 @@ nativas no disponibles; los datos de un PWA pueden purgarse si el SO necesita es
 
 ## Backlog de rendimiento
 - El build actual emite un warning no bloqueante de Vite/Rollup por chunk JS grande
-  (~1.5 MB sin comprimir, ~353 kB gzip), probablemente porque Phaser entra en el bundle
-  principal. No bloquea F2; revisar más adelante con code splitting/dynamic import o
-  `manualChunks` cuando haya una experiencia jugable que optimizar.
+  (~1.5 MB sin comprimir, ~363 kB gzip), probablemente porque Phaser entra en el bundle
+  principal. No bloqueante para F7 (instalar y usar funciona igual); revisar con code
+  splitting/dynamic import o `manualChunks` si el rendimiento en Safari iPad real
+  resulta un problema.
 
 ## Requisitos PWA
-- `manifest.webmanifest`: nombre, iconos (192/512), `display: standalone`, `theme_color`.
-- Service worker (via `vite-plugin-pwa` / Workbox) para offline y caché de assets.
-- HTTPS obligatorio para instalar.
+- `manifest.webmanifest`: nombre, iconos (192/512, `public/icons/`), `display: standalone`,
+  `theme_color` — generado por `vite-plugin-pwa` a partir de `vite.config.ts`.
+- `<link rel="apple-touch-icon" href="/icons/icon-180.png">` en `index.html` - iOS
+  Safari no usa los iconos del manifest para el icono de pantalla de inicio.
+- Service worker (via `vite-plugin-pwa` / Workbox, `registerType: "autoUpdate"`) para
+  offline y caché de assets.
+- HTTPS obligatorio para instalar - por eso hace falta desplegar a un hosting real
+  (`netlify.toml` en la raíz), no basta con probar en local.
 
 ## Si más adelante se quiere app en App Store
 Envolver la PWA con **Capacitor** o **PWABuilder** (genera proyecto iOS). La subida a la

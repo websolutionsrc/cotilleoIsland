@@ -2,6 +2,27 @@
 
 Formato: entradas por fase/hito. Fechas en `YYYY-MM-DD`.
 
+## [F7] - 2026-07-10 - infra done, on-device test pending
+
+### Added
+- `tools/icon-gen/generate-icon.mjs`: dependency-free placeholder PWA icon
+  generator, writes `public/icons/icon-{180,192,512}.png`.
+- `apple-touch-icon`/`icon` link tags in `index.html`.
+- `netlify.toml`: build/publish config, SPA fallback, service-worker
+  no-cache header.
+- `.claude/launch.json`: `prod-preview` config (`npm run preview`) for
+  verifying the real production PWA build (manifest + service worker only
+  exist there, not in `npm run dev`).
+
+### Notes
+- F6 (MVP IA opcional) was skipped by explicit user choice; shipping
+  distribution took priority.
+- Manifest, service worker, and icons verified in a desktop browser against
+  the production build. Connecting Netlify to the repo and testing "Add to
+  Home Screen" on a real iPad are manual steps for the user - not done here.
+- The generated icon is an explicit placeholder; swap it once the art pilot
+  (Mara) closes and a real app-icon direction exists.
+
 ## [F5.4] - 2026-07-10
 
 ### Added

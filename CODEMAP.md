@@ -421,6 +421,61 @@ pattern:
 - Model: Sonnet (construction on an already-closed design, matches AGENTS.md
   rubric).
 
+## Fase 7 - Distribucion (infra done; on-device test pending on the user)
+No closed design doc for F7 like F3-F5 had (`engine_design_f3-f5.md` only
+covers the engine, not distribution) - scoped directly from `docs/distribution_strategy.md`
+and the roadmap line ("build PWA, probar en Safari iPad, valorar wrapper App Store").
+F6 (MVP IA opcional) was skipped for now by explicit user choice - shipping the
+game as-is takes priority over the AI layer.
+
+- Found two real gaps before building anything: `vite.config.ts`'s manifest
+  referenced `icons/icon-192.png`/`icon-512.png` that never existed
+  (`public/icons/` only had a `.gitkeep`) - install would have shown a
+  broken icon - and there was no deploy config, so no HTTPS URL existed to
+  even attempt "Add to Home Screen" on. Asked the user rather than guessing:
+  hosting provider (external account) and how to handle the missing icon
+  (no app-icon direction exists yet, and the art pilot is still in progress
+  in parallel). Chose **Netlify** + a **placeholder icon** to unblock now,
+  swapped for real art later.
+- `tools/icon-gen/generate-icon.mjs`: new dependency-free script (reuses the
+  hand-rolled PNG encoder from `tools/defringe/defringe.mjs` - zlib +
+  CRC32 - instead of adding a canvas/image library for two flat-color
+  circles). Draws a simple "island" glyph using colors already established
+  in-game (`island-scene.ts`'s house/hill fills, the manifest's
+  `theme_color`), writes `public/icons/icon-{180,192,512}.png`. 180 is the
+  `apple-touch-icon` size - iOS Safari does not read the manifest's icons
+  for the home-screen icon, it needs its own `<link rel="apple-touch-icon">`
+  (added to `index.html`, was missing).
+- `netlify.toml`: build command, `dist` publish dir, SPA fallback redirect
+  (no client-side router today, but keeps any shared deep link from 404ing),
+  and a `no-cache` header on `sw.js` so service worker updates roll out
+  promptly (`registerType: "autoUpdate"` depends on the browser actually
+  refetching it).
+- `.claude/launch.json` gained a `prod-preview` config (`npm run preview`,
+  serves the real `dist/` build) alongside `dev` - needed because
+  `vite-plugin-pwa` only injects the manifest link and registers the service
+  worker in a production build, not `npm run dev`.
+- Validated in the browser against the real production build (`prod-preview`,
+  not `dev`): manifest fetches and parses correctly with both icon entries,
+  service worker registers and is `active`, all three icon files return
+  `200`/`image/png`. Resized to iPad portrait dimensions (834x1194) and
+  confirmed via computed styles/`window.innerWidth` that the responsive
+  mobile layout (panel.css's `max-width: 860px` breakpoint) applies
+  correctly with no horizontal overflow - the screenshot tool in this
+  environment did not reliably capture the resized viewport, so this was
+  confirmed numerically (`getBoundingClientRect`, `innerWidth`) instead of
+  visually.
+- **What is NOT done and cannot be done from here**: connecting the GitHub
+  repo to Netlify (external account action - the user's to do) and actually
+  testing "Add to Home Screen" on a real iPad in Safari (no physical device
+  access). `docs/distribution_strategy.md`'s "Estado (F7)" section lists
+  both as explicit manual next steps, not silently assumed done.
+- 175 tests still green (no core logic touched, this subfase is
+  infra/docs), build clean.
+- Model: Sonnet (infra/tooling work directly off the roadmap line and
+  `distribution_strategy.md`, no architecture decision involved beyond the
+  two the user was asked about).
+
 ## Fase 1.2 — personalidad: sliders → tags/categoría/expresión
 - `src/core/personality-derived.ts`: proyecciones puras y deterministas de los 6 sliders
   de `Personality` (única fuente de verdad; nada de esto se persiste ni se edita aparte):
