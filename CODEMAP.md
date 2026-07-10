@@ -421,12 +421,17 @@ pattern:
 - Model: Sonnet (construction on an already-closed design, matches AGENTS.md
   rubric).
 
-## Fase 7 - Distribucion (infra done; on-device test pending on the user)
+## Fase 7 - Distribucion [STANDBY by user decision]
 No closed design doc for F7 like F3-F5 had (`engine_design_f3-f5.md` only
 covers the engine, not distribution) - scoped directly from `docs/distribution_strategy.md`
 and the roadmap line ("build PWA, probar en Safari iPad, valorar wrapper App Store").
 F6 (MVP IA opcional) was skipped for now by explicit user choice - shipping the
 game as-is takes priority over the AI layer.
+
+On 2026-07-10 the user placed F7 on **STANDBY** because iPad deployment is not a
+current priority. The completed manifest/service-worker/icon/Netlify infrastructure
+is preserved. Connecting Netlify and testing on a physical iPad are intentionally
+deferred and do not block v1.1 work.
 
 - Found two real gaps before building anything: `vite.config.ts`'s manifest
   referenced `icons/icon-192.png`/`icon-512.png` that never existed
@@ -465,10 +470,10 @@ game as-is takes priority over the AI layer.
   environment did not reliably capture the resized viewport, so this was
   confirmed numerically (`getBoundingClientRect`, `innerWidth`) instead of
   visually.
-- **What is NOT done and cannot be done from here**: connecting the GitHub
+- **What is NOT done and is now intentionally deferred (STANDBY)**: connecting the GitHub
   repo to Netlify (external account action - the user's to do) and actually
   testing "Add to Home Screen" on a real iPad in Safari (no physical device
-  access). `docs/distribution_strategy.md`'s "Estado (F7)" section lists
+  access). `docs/distribution_strategy.md`'s "Estado (F7 - STANDBY)" section lists
   both as explicit manual next steps, not silently assumed done.
 - 175 tests still green (no core logic touched, this subfase is
   infra/docs), build clean.
