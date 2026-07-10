@@ -3,9 +3,16 @@
 Reglas para cualquier agente de IA que trabaje en este repo (Claude Code, etc.).
 
 ## Modo de trabajo actual
-Constructor único: **Claude Code**, coordinado por el humano. El comité multi-modelo
-(Fable/Opus/Sonnet/Haiku + GPT) está **en reserva** hasta validar el core loop y tener
-volumen de contenido. No montar comités ni pipelines de varios modelos todavía.
+Constructor unico por tarea/rama, coordinado por el humano y seleccionado entre las
+dos lineas de construccion disponibles: **Claude** (Fable/Opus/Sonnet/Haiku) y
+**GPT-5.6** (Sol/Terra/Luna). Claude no es una linea de revision opcional: Fable
+arquitecta, Opus coordina e integra, Sonnet construye y Haiku produce volumen; la
+linea GPT-5.6 tambien disena, coordina, construye y produce contenido segun el rol.
+
+El comite dual completo esta **en reserva** hasta validar el core loop y tener volumen
+de contenido. Mientras tanto, una tarea tiene un solo owner y no se montan pipelines
+de varios modelos ni se tocan los mismos archivos en paralelo. Reparto detallado:
+`40-Proyectos/CotilleoIsland/CotilleoIsland - Equipo de modelos LLM.md` en la boveda.
 
 ## Principios de producto
 - Juego **local-first**. No añadir backend, cuentas ni red sin issue explícito.
