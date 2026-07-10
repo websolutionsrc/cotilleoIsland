@@ -14,7 +14,7 @@ export interface IslandSceneData {
 }
 
 const PILOT_RESIDENT_TEXTURE_KEY = "pilot-resident-mara";
-const PILOT_RESIDENT_TEXTURE_PATH = "/art/pilot/mara_pilot_v4.png";
+const PILOT_RESIDENT_TEXTURE_PATH = "/art/pilot/mara_v5.png";
 const PILOT_RESIDENT_SCALE = 0.31;
 
 const STAGE_CENTER_X = 480;

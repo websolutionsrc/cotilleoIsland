@@ -2,6 +2,29 @@
 
 Formato: entradas por fase/hito. Fechas en `YYYY-MM-DD`.
 
+## [unreleased] - 2026-07-10 - mara_v5 wired into the runtime character (outside v01.01.F0)
+
+**Done informally, at the user's explicit request, bypassing the v01.01.F0
+visual production pipeline's HUMAN-BLOCKING gate for "material change to
+mara_v5.png or its role" (`docs/art/v1_1_f0_visual_production_plan.md`).**
+See CODEMAP/vault Historial for the full reasoning and the tradeoff the
+user accepted.
+
+### Added
+- `tools/cutout/cutout-mara-v5.mjs`: ad-hoc background-removal script,
+  produces `docs/art/pilot/mara_v5_cutout.png` (real alpha channel) from the
+  opaque `mara_v5.png` source. Same near-white/low-saturation heuristic as
+  `icon-from-mara.mjs`, applied to the full 1254x1254 canvas instead of a
+  bust crop.
+
+### Changed
+- `public/art/pilot/mara_v5.png`: new runtime texture (cutout + 2-pass
+  `defringe.mjs` cleanup), replacing `mara_pilot_v4.png` as the character
+  sprite in `src/ui/island-scene.ts`. Same 1254x1254 canvas as v4, so the
+  existing `PILOT_RESIDENT_SCALE` carried over unchanged.
+- `docs/art/pilot/mara_v5.png` (the raw generation output) was left
+  untouched - the cutout was written to a new file, not in-place.
+
 ## [F7.1] - 2026-07-10 - real icon from the art pilot
 
 ### Added
