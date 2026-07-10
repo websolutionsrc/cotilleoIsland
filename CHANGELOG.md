@@ -2,6 +2,18 @@
 
 Formato: entradas por fase/hito. Fechas en `YYYY-MM-DD`.
 
+## [F7.1] - 2026-07-10 - real icon from the art pilot
+
+### Added
+- `tools/icon-gen/icon-from-mara.mjs`: generates the PWA icon from
+  `docs/art/pilot/mara_v5.png` (bust crop, background recolored to brand
+  teal) instead of the flat-circle placeholder, at 180/192/512px.
+
+### Changed
+- `public/icons/icon-{180,192,512}.png` now use the real Mara art pilot
+  instead of `generate-icon.mjs`'s placeholder circles (kept as a
+  zero-dependency fallback, not deleted).
+
 ## [F7] - 2026-07-10 - infra done, on-device test pending
 
 ### Added

@@ -1,11 +1,17 @@
 # Estrategia de distribución — Cotilleo Island (web/PWA)
 
-## Estado (F7)
+## Estado (F7 - STANDBY)
+
+**User decision (2026-07-10):** F7 is intentionally paused. The repository keeps the
+PWA/install infrastructure already completed, but connecting Netlify and testing on a
+physical iPad are deferred until the user wants distribution. These manual steps do
+not block planning or building v1.1.
+
 - **[DONE]** Manifest válido servido en build de producción, service worker
-  activo (`npm run preview`, verificado en el navegador). Iconos placeholder
-  generados (`tools/icon-gen/`, ver nota abajo) para `manifest.webmanifest`
-  (192/512) y `apple-touch-icon` (180, requerido aparte por iOS Safari - no
-  lee los iconos del manifest para "Añadir a pantalla de inicio").
+  activo (`npm run preview`, verificado en el navegador). Iconos generados
+  (`tools/icon-gen/`, ver nota abajo) para `manifest.webmanifest` (192/512)
+  y `apple-touch-icon` (180, requerido aparte por iOS Safari - no lee los
+  iconos del manifest para "Añadir a pantalla de inicio").
 - **[DONE]** `netlify.toml` en la raíz del repo (build `npm run build`,
   publish `dist`, fallback SPA, cache-control del service worker).
 - **[DONE]** `vite.config.ts` escucha en todas las interfaces
@@ -16,15 +22,19 @@
   standalone/juego (IndexedDB) funcionan igual que en producción; **el
   service worker (caché offline) no**, porque Safari exige contexto seguro
   (HTTPS) para registrarlo - eso solo se puede probar tras el despliegue real.
-- **[TODO - acción manual del usuario]** Conectar el repo de GitHub a Netlify
+- **[STANDBY - acción manual del usuario]** Conectar el repo de GitHub a Netlify
   (Netlify detecta `netlify.toml` automáticamente al importar el repo) y
   obtener la URL HTTPS real.
-- **[TODO - acción manual del usuario]** Probar "Añadir a pantalla de inicio"
+- **[STANDBY - acción manual del usuario]** Probar "Añadir a pantalla de inicio"
   en un iPad real con Safari: esto no se puede verificar desde aquí (sin
   acceso a un iPad físico); solo se validó que el manifest/service
   worker/iconos son correctos en un navegador de escritorio.
-- **[TODO]** Sustituir el icono placeholder por uno real cuando el piloto de
-  arte (Mara) cierre y exista una dirección de icono de app.
+- **[DONE]** El icono ya no es el placeholder de circulos planos: se genera a
+  partir del arte real del piloto (`docs/art/pilot/mara_v5.png`,
+  `tools/icon-gen/icon-from-mara.mjs`) - recorte de busto centrado en la
+  cara, fondo recolorado al teal de marca. Sigue siendo provisional en el
+  sentido de que el piloto de Mara aun esta en iteracion; re-ejecutar el
+  script si cambia el arte fuente.
 
 ## Decisión
 El juego es una **PWA** (web app instalable). Esto encaja con el constraint principal

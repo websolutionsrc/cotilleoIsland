@@ -1,39 +1,57 @@
-# Icon generator (PWA placeholder icons)
+# Icon generator (PWA icons)
 
-Small, dependency-free Node script that draws the PWA/home-screen icons
-(`public/icons/icon-{180,192,512}.png`) as flat colored circles. Built for
-F7 (distribution): the manifest referenced these files but they never
-existed, so "Add to Home Screen" on iPad would have shown a broken or
-auto-generated icon.
+Two dependency-free Node scripts that produce the PWA/home-screen icons
+(`public/icons/icon-{180,192,512}.png`). Built for F7 (distribution): the
+manifest referenced these files but they never existed, so "Add to Home
+Screen" on iPad would have shown a broken or auto-generated icon.
 
-## Why a script instead of a real asset
+## `icon-from-mara.mjs` (active - run this one)
 
-There is no app-icon direction yet - `docs/art_library.md` only covers
-in-game character/scene art, not the PWA home-screen icon, and the pilot
-character (Mara) is still being iterated on in parallel. Rather than block
-F7 on that, or hand-author a throwaway PNG, this script draws a simple
-"island" glyph reusing colors already established in the running game
-(`src/ui/island-scene.ts`'s house/hill fills, and the manifest's
-`theme_color`) so it looks intentional rather than arbitrary. **Explicitly a
-placeholder** - replace with a real icon once the art pilot closes and an
-app-icon direction exists.
+Generates the real icon from the art pilot: crops a bust/head region out of
+`docs/art/pilot/mara_v5.png` (a 1254x1254 opaque RGB PNG, off-white/grainy
+background, no alpha channel), recolors the background to the game's brand
+teal (matching the manifest's `theme_color`), and box-filter downsamples to
+180 (apple-touch-icon), 192, and 512 px.
 
-## Usage
+```bash
+node tools/icon-gen/icon-from-mara.mjs
+```
+
+The crop rectangle (`CROP` constant in the script) is hand-tuned against
+`mara_v5.png`'s actual character bounding box - if the source art changes
+(new pose, different framing), re-check the crop and adjust the constant
+rather than assuming it still lines up. Background removal is a simple
+"near-white, low-saturation -> brand teal" heuristic (same family as
+`tools/defringe/defringe.mjs`'s edge detection, applied globally instead of
+just at edges) - safe here because the character's actual colors (skin,
+hair, clothing) are all saturated/dark enough not to collide with it, but
+re-verify visually if the source art's palette changes.
+
+Still provisional in the sense that the Mara pilot itself is still being
+iterated on by the user - re-run this script whenever the source art
+updates, rather than hand-editing the generated PNGs.
+
+## `generate-icon.mjs` (fallback - flat placeholder)
+
+Draws a simple "island" glyph (flat colored circles, no source art needed)
+reusing colors already established in the running game. Kept around as a
+zero-dependency fallback if `mara_v5.png` is ever missing/replaced and a
+quick non-broken icon is needed again before new art is ready.
 
 ```bash
 node tools/icon-gen/generate-icon.mjs
 ```
 
-Writes `public/icons/icon-180.png` (apple-touch-icon), `icon-192.png` and
-`icon-512.png` (manifest icons), overwriting whatever is there. No flags -
-the glyph and sizes are fixed; re-run after changing the script if you want
-different output.
+Both scripts write to the same three output paths and overwrite whatever is
+there - running one after the other simply replaces the icon.
 
 ## Notes
 
-- Reuses the same hand-rolled PNG encoder pattern as `tools/defringe/defringe.mjs`
-  (Node's built-in `zlib` + a small CRC32 implementation) instead of adding a
-  canvas/image dependency for two flat-color circles (AGENTS.md: no new
-  dependency without justification).
-- Not covered by the Vitest suite, same as `defringe.mjs` - it is a build-time
-  asset tool, not runtime/core logic. Verified visually after generation.
+- Both reuse the same hand-rolled PNG decode/encode pattern as
+  `tools/defringe/defringe.mjs` (Node's built-in `zlib` + a small CRC32
+  implementation) instead of adding a canvas/image dependency
+  (AGENTS.md: no new dependency without justification).
+- Not covered by the Vitest suite, same as `defringe.mjs` - these are
+  build-time asset tools, not runtime/core logic. Verified visually (and,
+  for `icon-from-mara.mjs`, by fetching the served files in the browser)
+  after generation, not by an automated test.
