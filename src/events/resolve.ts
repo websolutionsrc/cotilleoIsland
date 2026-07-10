@@ -4,7 +4,9 @@ import type { Resident } from "@/core/resident";
 import { isSocialSceneType, type SceneIntent, type SoloSceneType } from "./types";
 
 export type SceneResolutionAction =
-  | { kind: "give_food"; foodEffect: FoodEffect }
+  // `foodId` (F5.4) identifies the pantry entry to consume; the events layer
+  // stays decoupled from `@/data/foods` (only SaveSystem looks it up).
+  | { kind: "give_food"; foodEffect: FoodEffect; foodId: string }
   | { kind: "rest" }
   | { kind: "play" }
   | { kind: "chat" }

@@ -1,7 +1,7 @@
 import type { Resident } from "@/core/resident";
 import type { ResidentId } from "@/core/ids";
-import { decayNeeds } from "@/core/needs";
-import { addToPantry } from "@/core/pantry";
+import { applyFoodEffect, decayNeeds } from "@/core/needs";
+import { addToPantry, pantryQuantity, removeFromPantry } from "@/core/pantry";
 import { FOOD_CATALOG } from "@/data/foods";
 import { newlyUnlockedZones } from "@/data/zones";
 import {
@@ -167,6 +167,39 @@ export class SaveSystem {
     return next;
   }
 
+  /**
+   * Da comida directamente a un residente (fuera de una escena de hambre),
+   * consumiendo 1 unidad de la despensa. Persiste needs+pantry en una sola
+   * escritura (invariante #5). Lanza si el residente/comida no existen o si
+   * no queda stock (nunca deja la despensa en negativo).
+   */
+  async giveFoodFromPantry(residentId: ResidentId, foodId: string): Promise<SaveState> {
+    const food = FOOD_CATALOG.find((item) => item.id === foodId);
+    if (!food) {
+      throw new Error(`Unknown food id: ${foodId}`);
+    }
+
+    const state = await this.loadState();
+    const resident = state.residents.find((candidate) => candidate.id === residentId);
+    if (!resident) {
+      throw new Error("Cannot give food to missing resident");
+    }
+    if (pantryQuantity(state.pantry, foodId) <= 0) {
+      throw new Error(`No pantry stock for food id: ${foodId}`);
+    }
+
+    const updatedResident: Resident = { ...resident, needs: applyFoodEffect(resident.needs, food) };
+    const next: SaveState = {
+      ...state,
+      residents: state.residents.map((candidate) =>
+        candidate.id === updatedResident.id ? updatedResident : candidate,
+      ),
+      pantry: removeFromPantry(state.pantry, foodId, 1),
+    };
+    await this.persistState(next);
+    return next;
+  }
+
   async loadResident(id: ResidentId): Promise<Resident | null> {
     const state = await this.loadState();
     return state.residents.find((r) => r.id === id) ?? null;
@@ -319,6 +352,10 @@ export class SaveSystem {
       throw new Error("Cannot resolve scene for missing resident");
     }
 
+    if (action.kind === "give_food" && pantryQuantity(state.pantry, action.foodId) <= 0) {
+      throw new Error(`No pantry stock for food id: ${action.foodId}`);
+    }
+
     const updatedResident = resolveSceneNeeds(resident, intent, action);
     const celebratedZoneId =
       intent.sceneType === "zone_opening" && intent.cause.kind === "zone" ? intent.cause.zoneId : null;
@@ -336,6 +373,7 @@ export class SaveSystem {
       celebratedZoneIds: celebratedZoneId
         ? [...state.celebratedZoneIds, celebratedZoneId]
         : state.celebratedZoneIds,
+      pantry: action.kind === "give_food" ? removeFromPantry(state.pantry, action.foodId, 1) : state.pantry,
     };
     await this.persistState(next);
     return next;

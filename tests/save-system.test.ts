@@ -348,6 +348,7 @@ describe("SaveSystem scenes", () => {
     const next = await saveSystem.resolveScene(scene!, {
       kind: "give_food",
       foodEffect: { needsDelta: { hunger: -50 } },
+      foodId: "food_apple",
     });
 
     expect(next.residents[0]?.needs.hunger).toBe(40);
@@ -374,12 +375,14 @@ describe("SaveSystem scenes", () => {
       needsUpdatedAtMs: 1000,
       sceneLog,
       stats: { scenesResolved: 20 },
+      pantry: [{ itemId: "food_apple", qty: 3 }],
     });
     const [scene] = await saveSystem.computeActiveScenes(1000, 123);
 
     const next = await saveSystem.resolveScene(scene!, {
       kind: "give_food",
       foodEffect: { needsDelta: { hunger: -50 } },
+      foodId: "food_apple",
     });
 
     expect(next.sceneLog).toHaveLength(20);
@@ -566,6 +569,7 @@ describe("SaveSystem economy (F5.2)", () => {
     const next = await saveSystem.resolveScene(scene!, {
       kind: "give_food",
       foodEffect: { needsDelta: { hunger: -50 } },
+      foodId: "food_apple",
     });
 
     expect(next.wallet.coins).toBe(60); // 50 starter + 10 (urgent hunger)
@@ -625,5 +629,70 @@ describe("SaveSystem zone_opening (F5.3)", () => {
 
     const scenesAfter = await saveSystem.computeActiveScenes(1000, 123);
     expect(scenesAfter.some((s) => s.sceneType === "zone_opening")).toBe(false);
+  });
+});
+
+describe("SaveSystem pantry-gated food (F5.4)", () => {
+  it("giveFoodFromPantry applies needs and consumes 1 pantry unit in one write", async () => {
+    const storage = new CountingStorage();
+    const saveSystem = new SaveSystem(storage, () => 1000);
+    const resident = createResident({ name: "Lina", needs: { hunger: 60 } });
+    await saveSystem.saveResident(resident); // starter pantry: 3x food_apple
+    storage.setCalls = 0;
+
+    const next = await saveSystem.giveFoodFromPantry(resident.id, "food_apple");
+
+    expect(next.residents[0]?.needs.hunger).toBe(42); // apple: -18 hunger
+    expect(next.pantry.find((e) => e.itemId === "food_apple")?.qty).toBe(2);
+    expect(storage.setCalls).toBe(1);
+  });
+
+  it("giveFoodFromPantry rejects an unknown food, missing resident, or empty stock", async () => {
+    const storage = new InMemoryStorage();
+    const saveSystem = new SaveSystem(storage, () => 1000);
+    const resident = createResident({ name: "Lina" });
+    await saveSystem.saveResident(resident);
+
+    await expect(saveSystem.giveFoodFromPantry(resident.id, "food_unknown")).rejects.toThrow(
+      /Unknown food id/,
+    );
+    await expect(
+      saveSystem.giveFoodFromPantry("resident_missing" as never, "food_apple"),
+    ).rejects.toThrow(/missing resident/);
+    await expect(saveSystem.giveFoodFromPantry(resident.id, "food_ramen")).rejects.toThrow(
+      /No pantry stock/,
+    );
+  });
+
+  it("resolveScene rejects a give_food action with no pantry stock", async () => {
+    const storage = new InMemoryStorage();
+    const saveSystem = new SaveSystem(storage, () => 1000);
+    const resident = createResident({ name: "Lina", needs: { hunger: 90 } });
+    await saveSystem.saveResident(resident);
+    const [scene] = await saveSystem.computeActiveScenes(1000, 123);
+
+    await expect(
+      saveSystem.resolveScene(scene!, {
+        kind: "give_food",
+        foodEffect: { needsDelta: { hunger: -50 } },
+        foodId: "food_ramen", // not in starter pantry
+      }),
+    ).rejects.toThrow(/No pantry stock/);
+  });
+
+  it("resolveScene consumes 1 pantry unit when resolving a hungry scene with give_food", async () => {
+    const storage = new InMemoryStorage();
+    const saveSystem = new SaveSystem(storage, () => 1000);
+    const resident = createResident({ name: "Lina", needs: { hunger: 90 } });
+    await saveSystem.saveResident(resident);
+    const [scene] = await saveSystem.computeActiveScenes(1000, 123);
+
+    const next = await saveSystem.resolveScene(scene!, {
+      kind: "give_food",
+      foodEffect: { needsDelta: { hunger: -50 } },
+      foodId: "food_apple",
+    });
+
+    expect(next.pantry.find((e) => e.itemId === "food_apple")?.qty).toBe(2);
   });
 });

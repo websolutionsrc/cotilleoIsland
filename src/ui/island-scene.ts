@@ -270,6 +270,12 @@ export class IslandScene extends Phaser.Scene {
     this.reactionText.setText(message).setPosition(480, 74).setVisible(true);
   }
 
+  /** F5.4: feedback breve de recompensa (monedas ganadas al resolver una escena). */
+  showRewardFeedback(coins: number): void {
+    if (coins <= 0) return;
+    this.showResidentMessage(`+${coins} monedas`);
+  }
+
   /**
    * Muestra u oculta la burbuja genérica de escena (F3.4). Sustituye a la
    * burbuja de hambre ad-hoc de F2.4: el texto viene de `sceneTextFor` sobre
@@ -322,6 +328,27 @@ export class IslandScene extends Phaser.Scene {
         repeat: 2,
         onComplete: () => {
           sprite.setAngle(0);
+          resumeIdle();
+        },
+      });
+      return;
+    }
+
+    if (sceneType === "zone_opening") {
+      // Hito raro (F5.3): pulso de escala mas grande que el salto normal, para
+      // que se note como algo distinto a una necesidad resuelta.
+      const baseScale = sprite.scaleX;
+      this.tweens.add({
+        targets: sprite,
+        scaleX: baseScale * 1.18,
+        scaleY: baseScale * 1.18,
+        angle: { from: -4, to: 4 },
+        duration: 220,
+        yoyo: true,
+        repeat: 1,
+        ease: "Sine.easeInOut",
+        onComplete: () => {
+          sprite.setScale(baseScale).setAngle(0);
           resumeIdle();
         },
       });

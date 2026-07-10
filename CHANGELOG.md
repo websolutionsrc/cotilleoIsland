@@ -2,6 +2,26 @@
 
 Formato: entradas por fase/hito. Fechas en `YYYY-MM-DD`.
 
+## [F5.4] - 2026-07-10
+
+### Added
+- Shop UI: a "Tienda" section listing every catalog food with its price and
+  current pantry stock, buying 1 unit via `SaveSystem.buyFood`.
+- Wallet display (`Monedas: N`) in the resident panel.
+- `SaveSystem.giveFoodFromPantry(residentId, foodId)`: gives 1 unit of food
+  directly (outside a hungry scene), consuming pantry stock in the same
+  write. Throws on unknown food/resident or empty stock.
+- `SceneResolutionAction`'s `give_food` variant gained `foodId`; resolving a
+  hungry scene now also consumes 1 pantry unit and throws if stock is empty.
+- Reward feedback: a "+N monedas" bubble after resolving any scene that paid
+  a coin reward, and a distinct celebratory tween for `zone_opening`
+  (separate from the generic happy-hop used for hungry/bored/lonely).
+
+### Changed
+- Food giving (both the direct panel button and hungry-scene resolution) is
+  now gated on real pantry stock - the food select shows quantity owned and
+  disables giving when a food is out of stock.
+
 ## [F5.3] - 2026-07-10
 
 ### Added

@@ -153,6 +153,34 @@ select {
   line-height: 1.35;
 }
 
+.resident-panel__wallet {
+  margin: 0 0 10px;
+  color: #f1c36d;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.resident-panel__shop {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.resident-panel__shop-row {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.resident-panel__shop-label {
+  color: rgba(246, 239, 228, 0.86);
+  font-size: 13px;
+}
+
+.resident-panel__shop-row button {
+  width: auto;
+  min-width: 100px;
+  margin-top: 0;
+}
+
 .resident-panel__reaction {
   min-height: 2.4em;
   margin: 12px 0 0;

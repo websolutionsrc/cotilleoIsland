@@ -144,7 +144,7 @@ describe("resolveSceneNeeds", () => {
     const updated = resolveSceneNeeds(
       resident,
       intent({ sceneType: "hungry", cause: { kind: "need", need: "hunger", value: 90 } }),
-      { kind: "give_food", foodEffect: { needsDelta: { hunger: -50 } } },
+      { kind: "give_food", foodEffect: { needsDelta: { hunger: -50 } }, foodId: "food_apple" },
     );
 
     expect(updated.needs.hunger).toBe(40);

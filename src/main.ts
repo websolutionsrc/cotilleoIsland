@@ -5,6 +5,7 @@ import Phaser from "phaser";
 import "@/ui/panel.css";
 import type { Resident } from "@/core/resident";
 import type { ResidentId } from "@/core/ids";
+import type { PantryEntry } from "@/core/pantry";
 import { IndexedDbStorage } from "@/save/indexeddb-storage";
 import { SaveSystem } from "@/save/save-system";
 import { createResident } from "@/residents/factory";
@@ -52,6 +53,8 @@ async function bootstrap(): Promise<void> {
   let panel: ResidentPanel | null = null;
   let activeScene: SceneIntent | null = null;
   let activeSceneText: string | null = null;
+  let wallet = { coins: 0 };
+  let pantry: PantryEntry[] = [];
 
   /**
    * Recalcula el estado a mostrar para el residente actualmente enfocado.
@@ -61,8 +64,11 @@ async function bootstrap(): Promise<void> {
    * no mostrar (ni poder resolver) la escena de otro residente por error.
    */
   async function refreshResidentAndScene(): Promise<void> {
-    residents = await saveSystem.listResidents();
+    const state = await saveSystem.loadState();
+    residents = state.residents;
     resident = residents.find((candidate) => candidate.id === resident.id) ?? residents[0] ?? resident;
+    wallet = state.wallet;
+    pantry = state.pantry;
 
     const scenes = await saveSystem.computeActiveScenes();
     activeScene = scenes.find((scene) => scene.participants.includes(resident.id)) ?? null;
@@ -79,6 +85,7 @@ async function bootstrap(): Promise<void> {
     panel?.setResident(resident);
     panel?.setActiveScene(activeScene, activeSceneText);
     panel?.setResidents(residents, resident.id);
+    panel?.setEconomy(wallet, pantry);
   }
 
   await refreshResidentAndScene();
@@ -92,24 +99,28 @@ async function bootstrap(): Promise<void> {
       foods: FOOD_CATALOG,
       activeScene,
       activeSceneText,
+      wallet,
+      pantry,
       onSave: async (updated) => {
         await saveSystem.saveResident(updated);
         resident = updated;
         await refreshResidentAndScene();
       },
-      onGiveFood: async (updated, _food, reaction) => {
-        await saveSystem.saveResident(updated);
-        resident = updated;
+      onGiveFood: async (food, reaction) => {
+        const nextState = await saveSystem.giveFoodFromPantry(resident.id, food.id);
+        resident = nextState.residents.find((candidate) => candidate.id === resident.id) ?? resident;
         await refreshResidentAndScene();
         const scene = game.scene.getScene(IslandScene.KEY) as IslandScene | null;
         scene?.showResidentMessage(reaction);
       },
       onResolveScene: async (intent, action) => {
+        const coinsBefore = wallet.coins;
         const nextState = await saveSystem.resolveScene(intent, action);
         resident = nextState.residents.find((candidate) => candidate.id === resident.id) ?? resident;
         await refreshResidentAndScene();
         const scene = game.scene.getScene(IslandScene.KEY) as IslandScene | null;
         scene?.showResolutionFeedback(intent.sceneType);
+        scene?.showRewardFeedback(nextState.wallet.coins - coinsBefore);
       },
       onCreateResident: async (name) => {
         const created = createResident({ name });
@@ -123,6 +134,10 @@ async function bootstrap(): Promise<void> {
         if (!target) return;
         await saveSystem.setActiveResident(id);
         resident = target;
+        await refreshResidentAndScene();
+      },
+      onBuyFood: async (foodId) => {
+        await saveSystem.buyFood(foodId, 1);
         await refreshResidentAndScene();
       },
     });

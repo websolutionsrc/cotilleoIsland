@@ -31,11 +31,11 @@ Mapa de módulos previstos. Se rellena a medida que se implementan (Fase 1: sist
 | **Core** | `src/core/` | Tipos base: `Resident`, `Personality`, `Needs`, `Avatar`, ids tipados (`ResidentId`); proyecciones puras de personalidad (`personality-derived.ts`); lógica pura de necesidades (`needs.ts`) | **Fase 2.1: core de necesidades implementado** (sin UI ni persistencia de F2 aún) |
 | **Residents** | `src/residents/` | `createResident`/`updateResident` (defaults + validación pura de nombre y personalidad) | **Fase 1: implementado** (sin inventario/nivel aún) |
 | **Relationships** | `src/relationships/` | `types/key/chemistry/status/decay/apply` — core puro: par normalizado `a<b`, `chemistry` (proyección pura), máquina de estados con guardas, decaimiento, `applyRelationshipAction` (deltas+status en un punto) | **F4 fully DONE (F4.1-F4.4), tagged v01.00.F4** |
-| **Events** | `src/events/` | `types/rng/detectors/cooldowns/select/resolve/resolve-social/reward` — pipeline puro detect→cooldown→score→select, `SceneIntent` efímera (solo + social + `zone_opening`), `sceneLog` cap 20, recompensa de monedas (F5.1) | **F3+F4+F5.3 DONE; F5.4 UI wiring pending** |
+| **Events** | `src/events/` | `types/rng/detectors/cooldowns/select/resolve/resolve-social/reward` — pipeline puro detect→cooldown→score→select, `SceneIntent` efímera (solo + social + `zone_opening`), `sceneLog` cap 20, recompensa de monedas (F5.1) | **F3+F4+F5 DONE** |
 | **Dialogue** | `src/dialogue/` | V1: plantillas (`food-reactions.ts`, `scene-texts.ts` solo+social+zone_opening); V2: IA (`DialogueGenerator`) | **DONE for F3+F4+F5.3 scene types** |
 | **AI** (opcional) | `src/ai/` | DialogueEnhancer, DailyNarrator, MemorySummarizer, CatchphraseGenerator, EventSuggestor validado | pendiente (F6) |
-| **Save** | `src/save/` | `StoragePort` (`IndexedDbStorage` / `InMemoryStorage`) + `SaveSystem` (CRUD de residentes, `SaveState` v7 versionado, migración, decaimiento de mundo, escenas F3+F4+F5.3) | **v7 DONE** |
-| **UI** | `src/ui/` | `IslandScene` (Phaser) + `resident-panel` (overlay DOM: crear/editar residente, multi-residente, personalidad, comida, escenas solo+sociales+zone_opening) | **F4.4 DONE; F5.4 shop/wallet UI pending** |
+| **Save** | `src/save/` | `StoragePort` (`IndexedDbStorage` / `InMemoryStorage`) + `SaveSystem` (CRUD de residentes, `SaveState` v7 versionado, migración, decaimiento de mundo, escenas F3+F4+F5.3, `buyFood`/`giveFoodFromPantry`) | **v7 DONE** |
+| **UI** | `src/ui/` | `IslandScene` (Phaser) + `resident-panel` (overlay DOM: crear/editar residente, multi-residente, personalidad, comida, escenas solo+sociales+zone_opening, monedero, tienda, despensa) | **F4.4+F5.4 DONE - F5 fully closed** |
 | **Data** | `src/data/` | Catálogo de comidas (`foods.json`, ahora con `price`) + validación (`foods.ts`), quirks (`quirks.ts`), zonas (`zones.ts`, F5.1+F5.3) | **F5.1+F5.3 DONE** |
 | **Visual direction** | `docs/art_library.md` + `docs/art/references/` + future `public/art/` | 2D art library: characters, outfits, environments, scene language, asset export rules and delegation guidelines so other models can produce visual work without touching the core | **F2.6 art library DONE (ADR 0006, Direction B "Storybook with volume"); pilot asset pass pending before mass batches** |
 
@@ -213,7 +213,7 @@ seeded `SaveSystem` calls.
   scene box correctly cleared afterward. Zero console errors throughout.
 - **F4 (Relationships) is now fully closed: F4.1-F4.4 all DONE.**
 
-## Fase 5 - Isla/progreso (F5.1-F5.3 done)
+## Fase 5 - Isla/progreso (F5.1-F5.4 done, phase closed)
 Design in `docs/engine_design_f3-f5.md` section 4. Branch `develop/f5-island-progress`
 (from `v01.00.F4`; note: `main` has not been merged since Fase 1.2 - every phase has
 lived in its own feature branch with a closing tag, `main` was never used as an
@@ -226,7 +226,7 @@ pattern:
 | F5.1 | Pure core: zone catalog + unlock evaluation, reward calculation, pantry helpers, food prices | **DONE** |
 | F5.2 | `SaveState` v6 (`wallet`/`unlockedZoneIds`/`pantry`) + migration v5->v6 + `SaveSystem` wiring | **DONE** |
 | F5.3 | `zone_opening` scene (new solo `SceneType`, protagonist = oldest resident) | **DONE** |
-| F5.4 | UI: buy food with coins, pantry-gated giving, wallet display, zone celebration, reward feedback | pending |
+| F5.4 | UI: buy food with coins, pantry-gated giving, wallet display, zone celebration, reward feedback | **DONE** |
 
 - `src/data/zones.ts`: `ZONE_CATALOG` (5 fixed zones: `residential` always,
   `food_shop`>=1 resident, `clothes_shop`>=3, `plaza`>=5, `workshop`>=8 - same flat
@@ -361,6 +361,60 @@ pattern:
   `clothes_shop`, and the scene did not reappear on the next
   `computeActiveScenes` call. Cleaned up temp residents afterward, restoring
   the single-resident baseline save. Zero console errors throughout.
+- Model: Sonnet (construction on an already-closed design, matches AGENTS.md
+  rubric).
+
+## Fase 5.4 - shop/wallet UI, pantry-gated food, reward feedback - F5 fully closed
+- `SceneResolutionAction`'s `give_food` variant gained `foodId: string`
+  alongside the existing `foodEffect` - the events layer stays decoupled
+  from `@/data/foods` (it's just a string id), but `SaveSystem` can now
+  identify which pantry entry to consume.
+- `SaveSystem.resolveScene`: the solo branch now throws `No pantry stock for
+  food id: ...` if a `give_food` action targets an empty pantry entry, and
+  decrements 1 unit from `pantry` in the same write on success.
+- `SaveSystem.giveFoodFromPantry(residentId, foodId)`: new method for the
+  "give food anytime" path (independent of a hungry scene) - applies the
+  food's needs delta and decrements 1 pantry unit in one write. Throws on
+  unknown food/resident or empty stock, same guard pattern as `buyFood`.
+- `resident-panel.ts`: added a wallet display (`Monedas: N`), a "Tienda"
+  section (one row per `FOOD_CATALOG` item with its price, current pantry
+  stock, and a "Comprar" button wired to `onBuyFood`, disabled when coins are
+  insufficient), and pantry-aware food giving - the food `<select>` shows
+  stock per item (`Manzana crujiente (x3)`) and the "Dar comida"
+  button/hungry-scene-resolve button are disabled whenever the selected food
+  has 0 stock. `onGiveFood`'s signature changed from "here's the resident I
+  already updated, please persist it" to "give this food, `SaveSystem` owns
+  the write" - the panel no longer mutates resident state client-side for
+  food giving, matching the pattern already used for `onResolveScene`.
+- `island-scene.ts`: `zone_opening` gets its own resolution tween (a larger
+  scale-pulse + slight tilt, distinct from the generic happy-hop used for
+  hungry/bored/lonely) so a zone celebration reads as a bigger moment than a
+  routine need. New `showRewardFeedback(coins)` shows a `+N monedas` bubble
+  after any scene resolution that paid out a reward.
+- `main.ts`: `refreshResidentAndScene` now does one `loadState()` call
+  (replacing the old `listResidents()` call) so wallet/pantry are always
+  fresh alongside residents/scenes, pushed into the panel via the new
+  `setEconomy` method. `onResolveScene` captures `wallet.coins` before
+  calling `resolveScene` and diffs it against the result to drive
+  `showRewardFeedback` - no new persisted field needed, the reward is
+  derived from the before/after wallet delta.
+- Tests: `tests/save-system.test.ts` +4 (`giveFoodFromPantry` success +
+  3 rejection paths, `resolveScene` rejecting/consuming pantry stock on
+  `give_food`) plus fixture updates across the file for the new `foodId`
+  field on every `give_food` action fixture. **175 tests total,
+  project-wide.**
+- Validated end-to-end in the browser against real IndexedDB and real DOM
+  clicks (not shortcuts): bought a tortilla via the shop button (coins
+  43->28, pantry 0->1), gave it directly via "Dar comida" (pantry 1->0,
+  mood +6), confirmed the button auto-disables when the selected food has 0
+  stock (tried ramen), seeded urgent hunger, selected the in-stock apple,
+  clicked resolve, and confirmed hunger dropped, pantry went 3->2, coins
+  went 28->38, and the Phaser scene showed a live "+10 monedas" bubble.
+  Zero console errors throughout. Restored the single-resident baseline
+  save afterward.
+- **F5 (Isla/progreso) is now fully closed: F5.1 through F5.4, all built,
+  tested, and proven live** - zones, economy, pantry, celebrations, and the
+  shop/wallet UI.
 - Model: Sonnet (construction on an already-closed design, matches AGENTS.md
   rubric).
 

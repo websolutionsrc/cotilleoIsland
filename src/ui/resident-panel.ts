@@ -2,6 +2,7 @@ import type { Resident } from "@/core/resident";
 import type { ResidentId } from "@/core/ids";
 import { PERSONALITY_KEYS, type Personality } from "@/core/personality";
 import { applyFoodEffect, needsToStatus } from "@/core/needs";
+import { pantryQuantity, type PantryEntry } from "@/core/pantry";
 import type { FoodItem } from "@/data/foods";
 import { foodReactionFor } from "@/dialogue/food-reactions";
 import { isSocialSceneType, type SceneIntent, type SceneResolutionAction } from "@/events";
@@ -15,10 +16,14 @@ export interface ResidentPanelOptions {
   foods?: readonly FoodItem[];
   activeScene?: SceneIntent | null;
   activeSceneText?: string | null;
+  /** F5.4: monedas del jugador. */
+  wallet?: { coins: number };
+  /** F5.4: despensa actual (stock disponible por comida). */
+  pantry?: readonly PantryEntry[];
   /** Llamado con el residente ya validado, tras pulsar "Guardar". */
   onSave: (updated: Resident) => Promise<void> | void;
-  /** Llamado con el residente actualizado tras darle comida. */
-  onGiveFood?: (updated: Resident, food: FoodItem, reaction: string) => Promise<void> | void;
+  /** F5.4: da una unidad de `food` (de la despensa) al residente activo. `reaction` es texto ya generado, para mostrar en otros sitios (p.ej. la burbuja de Phaser). */
+  onGiveFood?: (food: FoodItem, reaction: string) => Promise<void> | void;
   /**
    * Called when the current scene is resolved. `action` is omitted for
    * social scenes (F4): resuelven sin elegir sub-accion (ver SaveSystem.resolveScene).
@@ -28,6 +33,8 @@ export interface ResidentPanelOptions {
   onCreateResident?: (name: string) => Promise<void> | void;
   /** F4.4: cambia cual residente se muestra/edita en el panel y la escena. */
   onSwitchResident?: (id: ResidentId) => Promise<void> | void;
+  /** F5.4: compra 1 unidad de `foodId` con monedas. */
+  onBuyFood?: (foodId: string) => Promise<void> | void;
 }
 
 export interface ResidentPanel {
@@ -37,6 +44,10 @@ export interface ResidentPanel {
   setActiveScene(intent: SceneIntent | null, text?: string | null): void;
   /** F4.4: refresca el selector tras crear/cambiar de residente. */
   setResidents(residents: readonly Resident[], activeId: ResidentId): void;
+  /** F5.4: refresca monedas + despensa (p.ej. tras comprar/dar comida/resolver una escena). */
+  setEconomy(wallet: { coins: number }, pantry: readonly PantryEntry[]): void;
+  /** F5.4: muestra un mensaje de feedback (reaccion o recompensa) bajo la escena. */
+  setReaction(text: string): void;
 }
 
 const PERSONALITY_LABELS: Record<keyof Personality, string> = {
@@ -55,11 +66,13 @@ const PERSONALITY_LABELS: Record<keyof Personality, string> = {
  * solo construye el DOM y traduce eventos de input a llamadas de dominio.
  */
 export function mountResidentPanel(options: ResidentPanelOptions): ResidentPanel {
-  const { container, foods = [], onGiveFood, onResolveScene, onSave, onCreateResident, onSwitchResident } =
+  const { container, foods = [], onGiveFood, onResolveScene, onSave, onCreateResident, onSwitchResident, onBuyFood } =
     options;
   let current = options.resident;
   let activeScene = options.activeScene ?? null;
   let activeSceneText = options.activeSceneText ?? null;
+  let wallet = options.wallet ?? { coins: 0 };
+  let pantry = options.pantry ?? [];
 
   container.innerHTML = "";
   container.classList.add("resident-panel");
@@ -67,6 +80,10 @@ export function mountResidentPanel(options: ResidentPanelOptions): ResidentPanel
   const title = document.createElement("h2");
   title.textContent = "Tu residente";
   container.appendChild(title);
+
+  const walletBox = document.createElement("p");
+  walletBox.className = "resident-panel__wallet";
+  container.appendChild(walletBox);
 
   const residentsTitle = document.createElement("h3");
   residentsTitle.textContent = "Residentes";
@@ -159,6 +176,10 @@ export function mountResidentPanel(options: ResidentPanelOptions): ResidentPanel
   needsSummary.className = "resident-panel__needs";
   container.appendChild(needsSummary);
 
+  const pantryTitle = document.createElement("h3");
+  pantryTitle.textContent = "Despensa";
+  container.appendChild(pantryTitle);
+
   const foodLabel = document.createElement("label");
   foodLabel.textContent = "Comida";
   foodLabel.htmlFor = "resident-food-select";
@@ -167,7 +188,6 @@ export function mountResidentPanel(options: ResidentPanelOptions): ResidentPanel
   for (const food of foods) {
     const option = document.createElement("option");
     option.value = food.id;
-    option.textContent = food.name;
     foodSelect.appendChild(option);
   }
   container.append(foodLabel, foodSelect);
@@ -175,8 +195,36 @@ export function mountResidentPanel(options: ResidentPanelOptions): ResidentPanel
   const giveFoodButton = document.createElement("button");
   giveFoodButton.type = "button";
   giveFoodButton.textContent = "Dar comida";
-  giveFoodButton.disabled = foods.length === 0 || onGiveFood === undefined;
   container.appendChild(giveFoodButton);
+
+  const shopTitle = document.createElement("h3");
+  shopTitle.textContent = "Tienda";
+  container.appendChild(shopTitle);
+
+  const shopList = document.createElement("div");
+  shopList.className = "resident-panel__shop";
+  container.appendChild(shopList);
+
+  const shopRows = new Map<string, { row: HTMLDivElement; label: HTMLSpanElement; button: HTMLButtonElement }>();
+  for (const food of foods) {
+    const row = document.createElement("div");
+    row.className = "resident-panel__row resident-panel__shop-row";
+
+    const label = document.createElement("span");
+    label.className = "resident-panel__shop-label";
+
+    const button = document.createElement("button");
+    button.type = "button";
+    button.textContent = `Comprar (${food.price})`;
+    button.addEventListener("click", () => {
+      if (!onBuyFood) return;
+      void onBuyFood(food.id);
+    });
+
+    row.append(label, button);
+    shopList.appendChild(row);
+    shopRows.set(food.id, { row, label, button });
+  }
 
   const sceneTitle = document.createElement("h3");
   sceneTitle.textContent = "Escena activa";
@@ -207,7 +255,8 @@ export function mountResidentPanel(options: ResidentPanelOptions): ResidentPanel
     switch (activeScene.sceneType) {
       case "hungry": {
         const selectedFood = foods.find((food) => food.id === foodSelect.value);
-        return selectedFood ? { kind: "give_food", foodEffect: selectedFood } : null;
+        if (!selectedFood || pantryQuantity(pantry, selectedFood.id) <= 0) return null;
+        return { kind: "give_food", foodEffect: selectedFood, foodId: selectedFood.id };
       }
       case "tired":
         return { kind: "rest" };
@@ -249,6 +298,28 @@ export function mountResidentPanel(options: ResidentPanelOptions): ResidentPanel
     resolveSceneButton.disabled = onResolveScene === undefined || (!social && actionForActiveScene() === null);
   }
 
+  /** F5.4: la comida deja de ser gratis - dar/vincular a una escena de hambre requiere stock real en la despensa. */
+  function syncPantryUi(): void {
+    walletBox.textContent = `Monedas: ${wallet.coins}`;
+
+    for (const food of foods) {
+      const qty = pantryQuantity(pantry, food.id);
+      const option = [...foodSelect.options].find((candidate) => candidate.value === food.id);
+      if (option) option.textContent = `${food.name} (x${qty})`;
+
+      const shopRow = shopRows.get(food.id);
+      if (shopRow) {
+        shopRow.label.textContent = `${food.name} - x${qty} en despensa`;
+        shopRow.button.disabled = onBuyFood === undefined || wallet.coins < food.price;
+      }
+    }
+
+    const selectedFood = foods.find((food) => food.id === foodSelect.value);
+    const selectedQty = selectedFood ? pantryQuantity(pantry, selectedFood.id) : 0;
+    giveFoodButton.disabled = !selectedFood || selectedQty <= 0 || onGiveFood === undefined;
+    syncScene();
+  }
+
   function syncInputs(resident: Resident): void {
     nameInput.value = resident.name;
     for (const key of PERSONALITY_KEYS) {
@@ -265,7 +336,7 @@ export function mountResidentPanel(options: ResidentPanelOptions): ResidentPanel
     const moodLabel = status.lowMood ? "ánimo bajo" : "ánimo estable";
     needsSummary.textContent = `Hambre ${resident.needs.hunger}/100 (${hungerLabel}) · Ánimo ${resident.needs.mood}/100 (${moodLabel})`;
     errorBox.textContent = "";
-    syncScene();
+    syncPantryUi();
   }
 
   saveButton.addEventListener("click", () => {
@@ -295,25 +366,20 @@ export function mountResidentPanel(options: ResidentPanelOptions): ResidentPanel
 
   giveFoodButton.addEventListener("click", () => {
     const selectedFood = foods.find((food) => food.id === foodSelect.value);
-    if (!selectedFood || !onGiveFood) return;
+    if (!selectedFood || !onGiveFood || pantryQuantity(pantry, selectedFood.id) <= 0) return;
 
-    const updated: Resident = {
-      ...current,
-      needs: applyFoodEffect(current.needs, selectedFood),
-    };
+    const previewNeeds = applyFoodEffect(current.needs, selectedFood);
     const reaction = foodReactionFor({
       resident: current,
       food: selectedFood,
       beforeNeeds: current.needs,
-      afterNeeds: updated.needs,
+      afterNeeds: previewNeeds,
     });
-    current = updated;
-    syncInputs(current);
     reactionBox.textContent = reaction;
-    void onGiveFood(updated, selectedFood, reaction);
+    void onGiveFood(selectedFood, reaction);
   });
 
-  foodSelect.addEventListener("change", syncScene);
+  foodSelect.addEventListener("change", syncPantryUi);
 
   resolveSceneButton.addEventListener("click", () => {
     if (!activeScene || !onResolveScene) return;
@@ -340,7 +406,6 @@ export function mountResidentPanel(options: ResidentPanelOptions): ResidentPanel
   });
 
   syncInputs(current);
-  syncScene();
   renderResidentOptions(options.residents ?? [current], current.id);
 
   return {
@@ -356,6 +421,14 @@ export function mountResidentPanel(options: ResidentPanelOptions): ResidentPanel
     },
     setResidents(residents: readonly Resident[], activeId: ResidentId) {
       renderResidentOptions(residents, activeId);
+    },
+    setEconomy(nextWallet: { coins: number }, nextPantry: readonly PantryEntry[]) {
+      wallet = nextWallet;
+      pantry = nextPantry;
+      syncPantryUi();
+    },
+    setReaction(text: string) {
+      reactionBox.textContent = text;
     },
   };
 }
