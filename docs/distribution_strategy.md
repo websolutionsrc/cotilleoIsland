@@ -8,6 +8,14 @@
   lee los iconos del manifest para "Añadir a pantalla de inicio").
 - **[DONE]** `netlify.toml` en la raíz del repo (build `npm run build`,
   publish `dist`, fallback SPA, cache-control del service worker).
+- **[DONE]** `vite.config.ts` escucha en todas las interfaces
+  (`server.host`/`preview.host: true`), para poder probar en el iPad real por
+  la misma red Wi-Fi sin esperar al despliegue: `npm run build && npm run
+  preview` e ir a `http://<IP-local-del-PC>:4173` desde Safari en el iPad
+  (la IP la imprime la terminal, línea "Network"). El icono/manifest/modo
+  standalone/juego (IndexedDB) funcionan igual que en producción; **el
+  service worker (caché offline) no**, porque Safari exige contexto seguro
+  (HTTPS) para registrarlo - eso solo se puede probar tras el despliegue real.
 - **[TODO - acción manual del usuario]** Conectar el repo de GitHub a Netlify
   (Netlify detecta `netlify.toml` automáticamente al importar el repo) y
   obtener la URL HTTPS real.

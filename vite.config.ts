@@ -10,6 +10,12 @@ export default defineConfig({
     // Respeta el puerto asignado por el harness de preview (autoPort) cuando
     // 5173 esté ocupado; sin PORT en el entorno, cae al 5173 de siempre.
     port: process.env.PORT ? Number(process.env.PORT) : 5173,
+    // F7: escucha en todas las interfaces para poder probar en el iPad real
+    // desde la misma red Wi-Fi sin depender de un despliegue HTTPS todavía.
+    host: true,
+  },
+  preview: {
+    host: true,
   },
   plugins: [
     VitePWA({
