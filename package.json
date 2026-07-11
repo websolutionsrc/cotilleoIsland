@@ -16,6 +16,10 @@
     "test:art-contracts": "node --test tools/art/contract-lib.node-tests.mjs",
     "art:measure-master": "node tools/art/measure-registration-master.mjs",
     "test:art-measure": "node --test tools/art/measure-registration-master.node-tests.mjs",
+    "art:make-garment-mask": "node tools/art/make-garment-mask.mjs",
+    "test:art-garment-mask": "node --test tools/art/make-garment-mask.node-tests.mjs",
+    "art:extract-edit-layer": "node tools/art/extract-edit-layer.mjs",
+    "test:art-extract-layer": "node --test tools/art/extract-layer-lib.node-tests.mjs",
     "defringe": "node tools/defringe/defringe.mjs"
   },
   "dependencies": {

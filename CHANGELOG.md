@@ -2,6 +2,73 @@
 
 Formato: entradas por fase/hito. Fechas en `YYYY-MM-DD`.
 
+## [v01.01.F0.2.2] - 2026-07-11 - garment edit-mask + invariant validator
+
+### Added
+- `tools/art/png-rgba.mjs`: shared dependency-free RGB/RGBA PNG codec,
+  extracted from the pattern repeated across `defringe.mjs`, `icon-gen`,
+  and `cutout`. New art tools import it instead of copying the codec again.
+- `tools/art/make-garment-mask.mjs` (+ 4 node tests): derives the
+  allowed-edit mask for garment generation from the approved registration
+  master - segments the neutral outfit by color, guarded above the chin and
+  below the shorts hem, seeded from interior-only pixels, dilated for
+  working room. Writes `docs/art/pilot/masks/mara_v5_garment_mask.png` and
+  a green-tinted review overlay.
+- `tools/art/extract-edit-layer.mjs` + `extract-layer-lib.mjs` (+ 6 node
+  tests): validates a garment generation against the mask and extracts the
+  changed-pixel layer. Exits nonzero if any pixel *outside* the mask
+  changed beyond tolerance - a generator that touched the face, hair, or
+  pose fails loudly instead of silently composing wrong.
+- npm scripts: `art:make-garment-mask`, `test:art-garment-mask`,
+  `art:extract-edit-layer`, `test:art-extract-layer`.
+- Inventory: `mara-v5-garment-mask` asset (`character_layer`,
+  `technically_valid`) and 3 new tool entries.
+
+### Notes
+- No garment has been generated yet - this closes the *validation
+  machinery* for the garment proof, not the proof itself. The
+  `character-garment-proof` gate (one edit-on-template garment composites
+  without seams) remains open.
+- All 12 art-tool node tests green (2 measure + 4 mask + 6 extract-layer),
+  inventory/contract validators green.
+
+## [v01.01.F0.2.1] - 2026-07-10 - registration anchors measured and frozen
+
+### Added
+- `docs/art/contracts/mara-v5-registration-measurements.json` (+ schema):
+  figure bounds, feet baseline, and authoring anchors (head/chest/hand
+  sockets) measured on the approved registration master.
+- `tools/art/measure-registration-master.mjs` (+ node tests): detects an
+  accidental recrop, scale, or alpha-bound change before composite work
+  starts. `art:measure-master` / `test:art-measure` npm scripts.
+- Anchors filled into `visual-contracts.json`'s character family (previously
+  `null`), frozen through the composed-pilot proof.
+
+### Fixed
+- The original commit for this subphase staged the npm scripts and the
+  measurement record but not the measurement tool itself - caught before
+  push and fixed via amend (see git history / vault Historial for detail).
+
+## [v01.01.F0.1] - 2026-07-10 - visual contracts + inventory + validators
+
+### Added
+- `docs/art/contracts/`: `visual-contracts.json` + JSON schemas. Global
+  style tokens (outline, lighting, cel shading, protected invariants) and
+  per-family contracts (character, environment, building, icon, scene) with
+  explicit human gates. Icon family grammar frozen.
+- `docs/art/visual_asset_inventory.json`: asset status ladder (draft ->
+  technically_valid -> runtime_valid -> human_approved -> production),
+  ownership lanes, provenance.
+- `tools/art/`: inventory + contract validators with node tests
+  (`art:validate`, `art:validate-contracts`, `test:art*`).
+
+### Changed
+- **Human gate resolved**: the user approved the Mara v5 cutout as the
+  neutral registration master after visual review (96/128/256px reads,
+  fringe re-measured, outline/lighting/alpha invariants checked).
+- README/ADRs/product_brief translated to English per the operational
+  language policy.
+
 ## [unreleased] - 2026-07-10 - mara_v5 wired into the runtime character (outside v01.01.F0)
 
 **Done informally, at the user's explicit request, bypassing the v01.01.F0
