@@ -2,6 +2,17 @@
 
 Formato: entradas por fase/hito. Fechas en `YYYY-MM-DD`.
 
+## [v01.01.F0.2.2 approved] - 2026-07-11 - character-garment-proof closed
+
+### Changed
+- User approved `garment-crop-top-shorts-v2-1` (crop top + shorts) as the
+  `character-garment-proof` deliverable. Inventory status `technically_valid`
+  -> `human_approved`, `humanDependency` -> `none`.
+- Not wired into any runtime compositor - F0 has no modular paper-doll
+  rendering system yet. The full pilot-sequence gate (composed-pilot
+  approval) still needs a hairstyle pair and two expressions proven the
+  same way before it closes; this covers the garment deliverable only.
+
 ## [v01.01.F0.2.2] - 2026-07-11 - validator recalibrated; first garment passes
 
 ### Changed

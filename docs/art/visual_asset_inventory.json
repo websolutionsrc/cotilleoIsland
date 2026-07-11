@@ -277,13 +277,12 @@
     {
       "id": "garment-crop-top-shorts-v2-1",
       "family": "character_layer",
-      "role": "First edit-on-template garment to pass invariant validation - candidate for character-garment-proof",
+      "role": "Approved character-garment-proof: first edit-on-template garment layer",
       "path": "docs/art/pilot/raw/garment_v2.1.layer.png",
-      "status": "technically_valid",
+      "status": "human_approved",
       "ownerLane": "human",
       "primaryOwner": "human",
-      "humanDependency": "human_approval",
-      "nextHumanAction": "Approve or reject this crop-top+shorts garment as the character-garment-proof (first edit-on-template garment layer). Technical validation passing (extract-edit-layer.mjs) is not the same as product approval.",
+      "humanDependency": "none",
       "sourceMethod": "edit_on_template",
       "masterId": "mara-v5-cutout-candidate",
       "runtimeUse": false,
@@ -299,7 +298,9 @@
         "Extracted layer (garment pixels only, inside the mask) from docs/art/pilot/raw/garment_v2.1.png, generated externally via an image-editing API using mara_v5_garment_mask_openai.png. Two prior attempts (garment_v1.png, garment_v2.png) were rejected: v1 drew a dress that overflowed the mask's hem (clipped in a straight line) plus heavy global drift; v2 fit the mask correctly but had a broad, uniform skin-tone shift across arms/legs.",
         "Passed extract-edit-layer.mjs after the validator itself was recalibrated with real measurements from these three attempts: silhouette mismatch 0.133% (cap 0.5%), color drift 0.842% (cap 5%), severe color drift 0.256% (cap 0.3%) - see extract-layer-lib.mjs's header for the full reasoning on why silhouette and color drift are checked independently.",
         "Composite (master + this layer) reviewed at 96/128/256px: garment (white crop top, black shorts) reads clearly at all three sizes, no seam artifacts at the mask boundary, face/hair/tattoo/arms/legs unaffected (sourced entirely from the master, never from the drifted edited image).",
-        "This is a layer, not a standalone asset: always composite over mara-v5-cutout-candidate, never use garment_v2.1.png (the full edited image) directly - that image has the color drift baked in everywhere outside the mask."
+        "This is a layer, not a standalone asset: always composite over mara-v5-cutout-candidate, never use garment_v2.1.png (the full edited image) directly - that image has the color drift baked in everywhere outside the mask.",
+        "Human approved 2026-07-11: closes the character-garment-proof deliverable. Not yet wired into any runtime compositor - F0 has no modular paper-doll rendering system yet (island-scene.ts still renders the flat master sprite directly); that is separate future work, not implied by this approval.",
+        "The full F0.2.2 pilot-sequence gate (composed-pilot approval) still needs a hairstyle pair and two expressions proven the same way before it closes - this approval covers the garment deliverable only."
       ]
     },
     {
