@@ -2,6 +2,43 @@
 
 Formato: entradas por fase/hito. Fechas en `YYYY-MM-DD`.
 
+## [v01.01.F0.2.2] - 2026-07-11 - hair + expression edit masks
+
+### Added
+- `tools/art/geometry-mask-lib.mjs`: shared ellipse-region helpers. Hair
+  and expression masks can't reuse the garment mask's color-segmentation
+  approach - a new hairstyle's silhouette doesn't resemble the current
+  curly hair, and expression features aren't a solid color block.
+- `tools/art/make-hair-mask.mjs` (+ 4 node tests): a generous oval around
+  and above the head (well beyond the current hair's bounds, for a very
+  different silhouette) minus a protected face oval (eyes, eyebrows, nose,
+  mouth, ears, cheeks), clipped at the same shoulder line the garment mask
+  starts at so it can never overlap the approved garment region. Landmarks
+  measured off a 2x zoomed gridded render of the master, not guessed - an
+  earlier attempt at guessed coordinates landed on hair instead of face
+  features. 12.70% of canvas editable.
+- `tools/art/make-expression-mask.mjs` (+ 4 node tests): union of 3
+  ellipses (both eyes+eyebrows, mouth), deliberately small (2.41% of
+  canvas) and excluding skin/cheeks/face-outline per the contract's
+  zOrder (face_expression is a distinct layer from skin_detail).
+- Both write internal-convention and OpenAI-images.edit-convention (alpha
+  inverted) mask exports plus a green-tinted review preview, same pattern
+  as the garment mask. `art:make-hair-mask`, `test:art-hair-mask`,
+  `art:make-expression-mask`, `test:art-expression-mask` npm scripts.
+- Inventory: 4 new mask assets + 3 new tool entries (25 assets / 13 tools
+  total).
+
+### Notes
+- No hair/expression generation attempted yet - this closes the mask
+  tooling only, same "prove the machinery, then generate" order used for
+  the garment.
+- Known constraint documented for the hair prompt: a hairstyle that drapes
+  past the shoulder clip line would leave old-hair remnants unedited below
+  it, the same overflow failure the garment's first attempt hit - keep the
+  new style within head+ear height.
+- 32 art-tool tests total, both validators green, 175 vitest green
+  (untouched).
+
 ## [v01.01.F0.2.2 approved] - 2026-07-11 - character-garment-proof closed
 
 ### Changed

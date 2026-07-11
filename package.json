@@ -20,6 +20,10 @@
     "test:art-garment-mask": "node --test tools/art/make-garment-mask.node-tests.mjs",
     "art:extract-edit-layer": "node tools/art/extract-edit-layer.mjs",
     "test:art-extract-layer": "node --test tools/art/extract-layer-lib.node-tests.mjs",
+    "art:make-hair-mask": "node tools/art/make-hair-mask.mjs",
+    "test:art-hair-mask": "node --test tools/art/make-hair-mask.node-tests.mjs",
+    "art:make-expression-mask": "node tools/art/make-expression-mask.mjs",
+    "test:art-expression-mask": "node --test tools/art/make-expression-mask.node-tests.mjs",
     "defringe": "node tools/defringe/defringe.mjs"
   },
   "dependencies": {
