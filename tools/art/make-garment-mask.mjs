@@ -16,11 +16,20 @@
 // Pixel-exact tuning lives here on purpose: the mask is regenerated from the
 // master, never hand-painted, so a master replacement regenerates the mask.
 //
-// Usage:
-//   node tools/art/make-garment-mask.mjs [--out <mask.png>] [--preview <preview.png>]
+// Also exports an OpenAI-images-edit-convention copy of the same mask
+// (alpha 0 = edit, alpha 255 = preserve - the exact inverse of the internal
+// mask above, which extract-edit-layer.mjs and its tests depend on and is
+// NOT changed by this). The OpenAI file uses the master's own RGB under the
+// preserved (opaque) area, so it previews as "the character photo with a
+// see-through hole where the garment goes" - the usual visual convention
+// for an inpainting mask, not just a flat color swatch.
 //
-// Defaults write docs/art/pilot/masks/mara_v5_garment_mask.png and its
-// review overlay next to it.
+// Usage:
+//   node tools/art/make-garment-mask.mjs [--out <mask.png>] [--preview <preview.png>] [--out-openai <mask.png>]
+//
+// Defaults write docs/art/pilot/masks/mara_v5_garment_mask.png (internal
+// convention, used by extract-edit-layer.mjs), its review overlay, and
+// mara_v5_garment_mask_openai.png (upload this one to the OpenAI API).
 
 import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -32,6 +41,7 @@ const REPO = join(__dirname, "..", "..");
 const MASTER = join(REPO, "docs", "art", "pilot", "mara_v5_cutout.png");
 const DEFAULT_OUT = join(REPO, "docs", "art", "pilot", "masks", "mara_v5_garment_mask.png");
 const DEFAULT_PREVIEW = join(REPO, "docs", "art", "pilot", "masks", "mara_v5_garment_mask_preview.png");
+const DEFAULT_OUT_OPENAI = join(REPO, "docs", "art", "pilot", "masks", "mara_v5_garment_mask_openai.png");
 
 // Segmentation band for the neutral outfit's warm grey, tuned against the
 // approved master (see docs/art/contracts/mara-v5-registration-measurements.json
@@ -46,12 +56,33 @@ const DILATE_PX = 16;
 const ALPHA_HALO_PX = 8; // a garment may extend this far past the current silhouette
 
 function parseArgs(argv) {
-  const options = { out: DEFAULT_OUT, preview: DEFAULT_PREVIEW };
+  const options = { out: DEFAULT_OUT, preview: DEFAULT_PREVIEW, outOpenai: DEFAULT_OUT_OPENAI };
   for (let i = 0; i < argv.length; i++) {
     if (argv[i] === "--out") options.out = argv[++i];
     else if (argv[i] === "--preview") options.preview = argv[++i];
+    else if (argv[i] === "--out-openai") options.outOpenai = argv[++i];
   }
   return options;
+}
+
+/**
+ * OpenAI images.edit mask convention: alpha 0 (transparent) = edit this
+ * pixel, alpha 255 (opaque) = preserve it. Exact inverse of the internal
+ * `mask` array's polarity (mask[i]=1 means editable there). RGB is not
+ * read by the API but is filled with the master's own pixels so the file
+ * previews sensibly instead of as a flat color swatch.
+ */
+export function buildOpenAiMask(master, mask) {
+  const { width, height } = master;
+  const pixels = Buffer.alloc(width * height * 4);
+  for (let i = 0; i < width * height; i++) {
+    const p = i * 4;
+    pixels[p] = master.pixels[p];
+    pixels[p + 1] = master.pixels[p + 1];
+    pixels[p + 2] = master.pixels[p + 2];
+    pixels[p + 3] = mask[i] ? 0 : 255;
+  }
+  return pixels;
 }
 
 function luminance(r, g, b) {
@@ -162,12 +193,16 @@ function main() {
     preview[i * 4 + 3] = 255;
   }
 
+  const openaiPixels = buildOpenAiMask(master, mask);
+
   mkdirSync(dirname(options.out), { recursive: true });
   writeFileSync(options.out, encodeRgbaPng(width, height, maskPixels));
   writeFileSync(options.preview, encodeRgbaPng(width, height, preview));
+  writeFileSync(options.outOpenai, encodeRgbaPng(width, height, openaiPixels));
   const pct = ((100 * editable) / (width * height)).toFixed(2);
   console.log(`Mask: ${options.out} (${editable} editable px, ${pct}% of canvas)`);
   console.log(`Preview: ${options.preview}`);
+  console.log(`OpenAI-convention mask: ${options.outOpenai} (alpha 0 = edit, alpha 255 = preserve)`);
 }
 
 const invokedDirectly = process.argv[1] && import.meta.url === new URL(`file:///${process.argv[1].replace(/\\/g, "/")}`).href;

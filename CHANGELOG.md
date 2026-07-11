@@ -2,6 +2,29 @@
 
 Formato: entradas por fase/hito. Fechas en `YYYY-MM-DD`.
 
+## [v01.01.F0.2.2 fix] - 2026-07-11 - garment mask: add OpenAI-convention export
+
+### Fixed
+- The garment mask (`mara_v5_garment_mask.png`) used "white opaque = editable"
+  internally, which is what `extract-edit-layer.mjs` validates against - but
+  the OpenAI `images.edit` API uses the exact opposite convention (alpha 0/
+  transparent = edit, alpha 255/opaque = preserve). Uploading the original
+  file as-is would have made the API regenerate the face/hair/pose and try
+  to preserve only the garment - backwards from the intent. Caught before
+  any generation was attempted, by asking rather than assuming.
+
+### Added
+- `tools/art/make-garment-mask.mjs` now also writes
+  `docs/art/pilot/masks/mara_v5_garment_mask_openai.png`: same editable
+  region, alpha inverted to OpenAI's convention, RGB filled from the master
+  so it previews as "the character photo with a see-through hole" instead
+  of a flat swatch. New `buildOpenAiMask()` export.
+- 2 new node tests asserting the alpha polarity is the exact inverse of the
+  internal mask, and that preserved-region RGB matches the master.
+- Inventory: new `mara-v5-garment-mask-openai` asset, with an explicit note
+  on the existing internal-convention asset warning the two are not
+  interchangeable.
+
 ## [v01.01.F0.2.2] - 2026-07-11 - garment edit-mask + invariant validator
 
 ### Added
