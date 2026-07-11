@@ -1,0 +1,209 @@
+{
+  "edited": "docs/art/pilot/raw/garment_v2.1.png",
+  "master": "C:\\Users\\rodri\\Documents\\Proyectos\\apps\\cotilleoIsland\\docs\\art\\pilot\\mara_v5_cutout.png",
+  "mask": "C:\\Users\\rodri\\Documents\\Proyectos\\apps\\cotilleoIsland\\docs\\art\\pilot\\masks\\mara_v5_garment_mask.png",
+  "layerPixels": 33467,
+  "silhouette": {
+    "count": 2092,
+    "fraction": 0.0013303521236031938,
+    "maxAllowedFraction": 0.005,
+    "passed": true,
+    "samples": [
+      {
+        "x": 592,
+        "y": 170
+      },
+      {
+        "x": 593,
+        "y": 170
+      },
+      {
+        "x": 594,
+        "y": 170
+      },
+      {
+        "x": 595,
+        "y": 170
+      },
+      {
+        "x": 596,
+        "y": 170
+      },
+      {
+        "x": 597,
+        "y": 170
+      },
+      {
+        "x": 615,
+        "y": 170
+      },
+      {
+        "x": 589,
+        "y": 171
+      },
+      {
+        "x": 590,
+        "y": 171
+      },
+      {
+        "x": 619,
+        "y": 171
+      },
+      {
+        "x": 586,
+        "y": 172
+      },
+      {
+        "x": 583,
+        "y": 173
+      },
+      {
+        "x": 581,
+        "y": 174
+      },
+      {
+        "x": 578,
+        "y": 175
+      },
+      {
+        "x": 632,
+        "y": 175
+      },
+      {
+        "x": 643,
+        "y": 175
+      },
+      {
+        "x": 576,
+        "y": 176
+      },
+      {
+        "x": 634,
+        "y": 176
+      },
+      {
+        "x": 638,
+        "y": 176
+      },
+      {
+        "x": 574,
+        "y": 177
+      }
+    ]
+  },
+  "colorDrift": {
+    "count": 13234,
+    "fraction": 0.008415812621302423,
+    "maxAllowedFraction": 0.05,
+    "maxDelta": 220,
+    "tolerance": 25,
+    "severeCount": 4032,
+    "severeFraction": 0.002564043863464664,
+    "maxAllowedSevereFraction": 0.003,
+    "severeThreshold": 60,
+    "passed": true,
+    "samples": [
+      {
+        "x": 598,
+        "y": 170,
+        "delta": 36
+      },
+      {
+        "x": 599,
+        "y": 170,
+        "delta": 47
+      },
+      {
+        "x": 600,
+        "y": 170,
+        "delta": 52
+      },
+      {
+        "x": 601,
+        "y": 170,
+        "delta": 48
+      },
+      {
+        "x": 602,
+        "y": 170,
+        "delta": 49
+      },
+      {
+        "x": 603,
+        "y": 170,
+        "delta": 52
+      },
+      {
+        "x": 604,
+        "y": 170,
+        "delta": 58
+      },
+      {
+        "x": 605,
+        "y": 170,
+        "delta": 57
+      },
+      {
+        "x": 606,
+        "y": 170,
+        "delta": 56
+      },
+      {
+        "x": 607,
+        "y": 170,
+        "delta": 55
+      },
+      {
+        "x": 608,
+        "y": 170,
+        "delta": 56
+      },
+      {
+        "x": 609,
+        "y": 170,
+        "delta": 59
+      },
+      {
+        "x": 610,
+        "y": 170,
+        "delta": 66
+      },
+      {
+        "x": 611,
+        "y": 170,
+        "delta": 77
+      },
+      {
+        "x": 612,
+        "y": 170,
+        "delta": 59
+      },
+      {
+        "x": 613,
+        "y": 170,
+        "delta": 48
+      },
+      {
+        "x": 614,
+        "y": 170,
+        "delta": 47
+      },
+      {
+        "x": 614,
+        "y": 171,
+        "delta": 32
+      },
+      {
+        "x": 615,
+        "y": 171,
+        "delta": 44
+      },
+      {
+        "x": 616,
+        "y": 171,
+        "delta": 50
+      }
+    ]
+  },
+  "verdict": "invariants_ok"
+}

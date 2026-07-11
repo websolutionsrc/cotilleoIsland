@@ -38,43 +38,65 @@ test("changed pixels inside the mask land in the layer, unchanged ones do not", 
   const mask = maskWithEditableColumn(2, 4);
 
   const result = extractEditLayer(master, edited, mask);
-  assert.equal(result.violations.count, 0);
+  assert.equal(result.passed, true);
+  assert.equal(result.colorDrift.count, 0);
   assert.equal(result.layerCount, 1);
   const i = (4 * W + 3) * 4;
   assert.deepEqual([...result.layerPixels.subarray(i, i + 4)], [200, 50, 50, 255]);
 });
 
-test("changes outside the mask are violations, not layer content", () => {
+test("changes outside the mask are color-drift violations, not layer content", () => {
   const master = makeImage();
   const edited = makeImage();
-  setPx(edited, 6, 1, [220, 220, 220, 255]); // outside mask
+  setPx(edited, 6, 1, [220, 220, 220, 255]); // outside mask, delta 120 (severe)
   const mask = maskWithEditableColumn(2, 4);
 
   const result = extractEditLayer(master, edited, mask);
   assert.equal(result.layerCount, 0);
-  assert.equal(result.violations.count, 1);
-  assert.deepEqual(result.violations.samples[0], { x: 6, y: 1, delta: 120 });
+  assert.equal(result.colorDrift.count, 1);
+  assert.deepEqual(result.colorDrift.samples[0], { x: 6, y: 1, delta: 120 });
+  // Single severe pixel on an 8x8 canvas is 1.5625% - well past the 0.3% severe cap.
+  assert.equal(result.colorDrift.severeCount, 1);
+  assert.equal(result.colorDrift.passed, false);
+  assert.equal(result.passed, false);
 });
 
 test("generator noise within tolerance on protected pixels is accepted", () => {
   const master = makeImage();
-  const edited = makeImage([104, 97, 102, 255]); // global +-4 noise everywhere
+  const edited = makeImage([104, 97, 102, 255]); // global +-4 noise everywhere, well under COLOR_DRIFT_TOLERANCE=25
   const mask = maskWithEditableColumn(2, 4);
 
   const result = extractEditLayer(master, edited, mask);
-  assert.equal(result.violations.count, 0);
+  assert.equal(result.passed, true);
+  assert.equal(result.colorDrift.count, 0);
   assert.equal(result.layerCount, 0); // below layerThreshold: not real garment change
 });
 
-test("silhouette change outside the mask is a hard violation", () => {
+test("silhouette change outside the mask fails the silhouette fraction check", () => {
   const master = makeImage();
   setPx(master, 7, 7, [0, 0, 0, 0]); // master transparent corner
   const edited = makeImage(); // edited made it opaque
   const mask = maskWithEditableColumn(2, 4);
 
   const result = extractEditLayer(master, edited, mask);
-  assert.equal(result.violations.count, 1);
-  assert.equal(result.violations.maxDelta, 255);
+  assert.equal(result.silhouette.count, 1);
+  // 1/64 = 1.5625%, well past the 0.5% silhouette cap.
+  assert.equal(result.silhouette.passed, false);
+  assert.equal(result.passed, false);
+});
+
+test("a large-enough color drift fails on count fraction even if no single pixel is severe", () => {
+  const master = makeImage();
+  // Delta 30: past COLOR_DRIFT_TOLERANCE (25) but under SEVERE_COLOR_DRIFT_THRESHOLD (60).
+  const edited = makeImage([130, 100, 100, 255]);
+  const mask = maskWithEditableColumn(2, 4); // 3 of 8 columns editable -> 5/8 columns protected
+
+  const result = extractEditLayer(master, edited, mask);
+  assert.equal(result.colorDrift.severeCount, 0);
+  assert.ok(result.colorDrift.count > 0);
+  // 5 protected columns * 8 rows = 40 px changed out of 64 = 62.5%, past the 5% cap.
+  assert.equal(result.colorDrift.passed, false);
+  assert.equal(result.passed, false);
 });
 
 test("canvas mismatch throws instead of silently comparing", () => {
